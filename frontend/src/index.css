@@ -1,0 +1,343 @@
+/* Trio Monitor - Modern Dashboard Styles */
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #f8f9fa;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+/* Dashboard Layout */
+.dashboard-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.main-content {
+  padding: 20px;
+  background-color: #f8f9fa;
+  min-height: calc(100vh - 80px);
+}
+
+/* Header Styles */
+.dashboard-header {
+  background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+  color: white;
+  padding: 15px 20px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.header-title {
+  font-size: 1.8rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.header-subtitle {
+  font-size: 0.9rem;
+  opacity: 0.8;
+  margin: 0;
+}
+
+/* Status Cards */
+.status-card {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+  border: none;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  height: 100%;
+}
+
+.status-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+}
+
+.status-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.status-card-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #6c757d;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0;
+}
+
+.status-card-value {
+  font-size: 2.2rem;
+  font-weight: 700;
+  margin: 0;
+  line-height: 1;
+}
+
+.status-card-unit {
+  font-size: 0.8rem;
+  color: #6c757d;
+  margin-left: 5px;
+}
+
+.status-card-change {
+  font-size: 0.8rem;
+  font-weight: 500;
+  margin-top: 8px;
+}
+
+/* Queue Status Colors */
+.queue-good {
+  border-left: 4px solid #28a745;
+}
+
+.queue-good .status-card-value {
+  color: #28a745;
+}
+
+.queue-warning {
+  border-left: 4px solid #ffc107;
+}
+
+.queue-warning .status-card-value {
+  color: #ffc107;
+}
+
+.queue-critical {
+  border-left: 4px solid #dc3545;
+  animation: pulse-critical 2s infinite;
+}
+
+.queue-critical .status-card-value {
+  color: #dc3545;
+}
+
+@keyframes pulse-critical {
+  0% { box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
+  50% { box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3); }
+  100% { box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
+}
+
+/* Agent Status */
+.agent-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.agent-available {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.agent-busy {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.agent-unavailable {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.agent-break {
+  background-color: #d1ecf1;
+  color: #0c5460;
+}
+
+/* Progress Bars */
+.progress-custom {
+  height: 8px;
+  border-radius: 4px;
+  background-color: #e9ecef;
+  overflow: hidden;
+}
+
+.progress-bar-good {
+  background: linear-gradient(90deg, #28a745, #20c997);
+}
+
+.progress-bar-warning {
+  background: linear-gradient(90deg, #ffc107, #fd7e14);
+}
+
+.progress-bar-critical {
+  background: linear-gradient(90deg, #dc3545, #e74c3c);
+}
+
+/* Alerts */
+.alert-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1050;
+  max-width: 400px;
+}
+
+.alert-item {
+  margin-bottom: 10px;
+  border-radius: 8px;
+  border: none;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.alert-critical {
+  background-color: #f8d7da;
+  border-left: 4px solid #dc3545;
+  color: #721c24;
+}
+
+.alert-warning {
+  background-color: #fff3cd;
+  border-left: 4px solid #ffc107;
+  color: #856404;
+}
+
+/* Tables */
+.table-custom {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+}
+
+.table-custom thead th {
+  background-color: #f8f9fa;
+  border: none;
+  font-weight: 600;
+  color: #495057;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  letter-spacing: 0.5px;
+  padding: 15px;
+}
+
+.table-custom tbody td {
+  border: none;
+  padding: 15px;
+  vertical-align: middle;
+}
+
+.table-custom tbody tr {
+  border-bottom: 1px solid #f8f9fa;
+}
+
+.table-custom tbody tr:last-child {
+  border-bottom: none;
+}
+
+/* Charts */
+.chart-container {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+  height: 300px;
+}
+
+/* Loading Spinner */
+.loading-spinner {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+}
+
+.spinner-border-custom {
+  width: 3rem;
+  height: 3rem;
+  border-width: 0.3em;
+}
+
+/* Status Indicators */
+.status-indicator {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-right: 8px;
+}
+
+.status-online {
+  background-color: #28a745;
+  animation: pulse-online 2s infinite;
+}
+
+.status-offline {
+  background-color: #dc3545;
+}
+
+@keyframes pulse-online {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .main-content {
+    padding: 10px;
+  }
+  
+  .status-card {
+    margin-bottom: 15px;
+  }
+  
+  .status-card-value {
+    font-size: 1.8rem;
+  }
+  
+  .header-title {
+    font-size: 1.4rem;
+  }
+  
+  .alert-container {
+    left: 10px;
+    right: 10px;
+    max-width: none;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  body {
+    background-color: #1a1a1a;
+    color: #ffffff;
+  }
+  
+  .main-content {
+    background-color: #1a1a1a;
+  }
+  
+  .status-card {
+    background: #2d2d2d;
+    color: #ffffff;
+  }
+  
+  .table-custom {
+    background: #2d2d2d;
+    color: #ffffff;
+  }
+  
+  .table-custom thead th {
+    background-color: #3d3d3d;
+    color: #ffffff;
+  }
+}
