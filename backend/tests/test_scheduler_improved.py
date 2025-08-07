@@ -29,12 +29,13 @@ class TestImprovedTrioScheduler:
             mock.get_agent_states = AsyncMock(return_value=[])
             mock.get_queue_metrics = AsyncMock(return_value=[])
             mock.get_service_level_metrics = AsyncMock(return_value=ServiceLevelMetrics(
+                date=datetime.now(),
                 total_calls=100,
                 calls_answered_within_target=80,
                 service_level_percentage=80.0,
-                average_wait_time=15.0,
-                total_queue_time=1500,
-                peak_wait_time=25,
+                average_wait_time=15.5,
+                total_queue_time=1550,
+                peak_wait_time=45,
                 queue_time_limit_breached=False
             ))
             mock.test_connection = AsyncMock(return_value=True)
@@ -134,6 +135,7 @@ class TestImprovedTrioScheduler:
         ]
         
         service_level = ServiceLevelMetrics(
+            date=datetime.now(),
             total_calls=100,
             calls_answered_within_target=80,
             service_level_percentage=80.0,
@@ -157,16 +159,17 @@ class TestImprovedTrioScheduler:
             QueueMetrics(
                 queue_id="q1",
                 queue_name="Support",
-                current_wait_time=17,  # Between 15-20s warning
+                current_wait_time=19,  # Between 18-20s warning (threshold is 18)
                 queue_depth=3,
                 status=QueueStatus.WARNING,
                 calls_waiting=2,
-                longest_wait_time=18,
+                longest_wait_time=19,
                 average_wait_time=15.0
             )
         ]
         
         service_level = ServiceLevelMetrics(
+            date=datetime.now(),
             total_calls=100,
             calls_answered_within_target=80,
             service_level_percentage=80.0,
@@ -188,6 +191,7 @@ class TestImprovedTrioScheduler:
         queues = []
         
         service_level = ServiceLevelMetrics(
+            date=datetime.now(),
             total_calls=100,
             calls_answered_within_target=70,
             service_level_percentage=70.0,  # Below 80% target
@@ -210,6 +214,7 @@ class TestImprovedTrioScheduler:
         queues = []
         
         service_level = ServiceLevelMetrics(
+            date=datetime.now(),
             total_calls=100,
             calls_answered_within_target=80,
             service_level_percentage=80.0,
@@ -241,10 +246,13 @@ class TestImprovedTrioScheduler:
     @pytest.mark.asyncio
     async def test_health_check_api_unhealthy(self, scheduler):
         """Test health check when API is unhealthy."""
-        with patch('scheduler_improved.api_client.test_connection', 
-                   AsyncMock(return_value=False)):
+        with patch('scheduler_improved.api_client') as mock_client:
+            # Mock test_connection to return False for unhealthy API
+            mock_client.test_connection = AsyncMock(return_value=False)
             with patch('scheduler_improved.get_db') as mock_db:
-                mock_db.return_value.__next__.return_value.execute.return_value = None
+                mock_session = MagicMock()
+                mock_session.execute.return_value = None
+                mock_db.return_value.__next__.return_value = mock_session
                 
                 await scheduler._health_check()
                 
@@ -291,6 +299,7 @@ class TestImprovedTrioScheduler:
         agents = []
         queues = []
         service_level = ServiceLevelMetrics(
+            date=datetime.now(),
             total_calls=100,
             calls_answered_within_target=80,
             service_level_percentage=80.0,
