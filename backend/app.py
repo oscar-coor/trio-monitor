@@ -5,14 +5,23 @@ from contextlib import asynccontextmanager
 from typing import List, Dict, Any
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
-from config import settings
-from models import DashboardData, AgentState, QueueMetrics, ServiceLevelMetrics, AlertData
-from database import get_db, db_manager
-from scheduler import trio_scheduler
-from auth import auth_manager
+# Use improved modules with better error handling and security
+try:
+    from config_improved import settings
+    from auth_improved import auth_manager
+    from scheduler_improved import trio_scheduler
+    from database_improved import get_db, get_db_context, db_manager, HistoricalDataDB
+except ImportError:
+    # Fallback to original modules if improved not available
+    from config import settings
+    from auth import auth_manager
+    from scheduler import trio_scheduler
+    from database import get_db, db_manager, HistoricalDataDB
+
+from api_client import api_client
+from models import DashboardData, AgentState, QueueMetrics, ServiceLevelMetrics, AlertData, HistoricalData
 
 # Configure logging
 logging.basicConfig(
@@ -24,26 +33,41 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Application lifespan manager."""
+    """Application lifespan manager with improved error handling."""
     # Startup
-    logger.info("Starting Trio Monitor backend...")
+    logger.info("Starting Trio Monitor Backend...")
     
-    # Test API connection
-    connection_ok = await auth_manager.test_connection()
-    if connection_ok:
-        logger.info("Successfully connected to Trio Enterprise API")
-    else:
-        logger.warning("Could not connect to Trio Enterprise API - using mock data")
-    
-    # Start scheduler
-    trio_scheduler.start()
+    try:
+        # Authenticate with Trio Enterprise API
+        authenticated = await auth_manager.authenticate()
+        if not authenticated:
+            logger.error("Failed to authenticate with Trio Enterprise API")
+            # Continue startup even if auth fails - scheduler will retry
+        
+        # Start the scheduler with error recovery
+        trio_scheduler.start()
+        
+        logger.info("Trio Monitor Backend started successfully")
+    except Exception as e:
+        logger.error(f"Startup error: {e}", exc_info=True)
+        # Allow app to start but in degraded mode
     
     yield
     
     # Shutdown
-    logger.info("Shutting down Trio Monitor backend...")
-    trio_scheduler.stop()
-    await auth_manager.close()
+    logger.info("Shutting down Trio Monitor Backend...")
+    
+    try:
+        # Stop the scheduler gracefully
+        trio_scheduler.stop()
+        
+        # Logout and cleanup auth resources
+        if hasattr(auth_manager, 'logout'):
+            await auth_manager.logout()
+        
+        logger.info("Trio Monitor Backend shut down successfully")
+    except Exception as e:
+        logger.error(f"Shutdown error: {e}", exc_info=True)
 
 
 # Create FastAPI app
@@ -54,13 +78,13 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Configure CORS
+# Configure CORS - Enhanced configuration with specific methods and headers
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[settings.frontend_url, "http://localhost:3000"],
+    allow_origins=getattr(settings, 'allowed_origins', [settings.frontend_url, "http://localhost:3000"]),
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With"],
 )
 
 
