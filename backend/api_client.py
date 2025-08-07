@@ -20,26 +20,42 @@ class TrioAPIClient:
         self.queue_time_limit = settings.queue_time_limit
         self.warning_threshold = settings.warning_threshold
     
+    async def _handle_api_request(self, endpoint: str, retry_on_redirect: bool = True):
+        """Handle API requests with redirect support."""
+        session = await self.auth_manager.get_session()
+        response = await session.get(endpoint)
+        
+        # Handle 307 Temporary Redirect for failover
+        if response.status_code == 307 and retry_on_redirect:
+            logger.info(f"Handling redirect for endpoint: {endpoint}")
+            await self.auth_manager._handle_redirect(response)
+            # Retry with new session after redirect
+            session = await self.auth_manager.get_session()
+            response = await session.get(endpoint)
+        
+        response.raise_for_status()
+        return response.json()
+
     async def get_agent_states(self) -> List[AgentState]:
         """Fetch current agent states from Trio API."""
         try:
-            session = await self.auth_manager.get_session()
-            # Use the correct Trio API endpoint for agent states
-            response = await session.get(f"/cc/{settings.trio_contact_center_id}/agents/state")
-            response.raise_for_status()
-            
-            agents_data = response.json()
+            endpoint = f"/cc/{settings.trio_contact_center_id}/agents/state"
+            agents_data = await self._handle_api_request(endpoint)
             agents = []
             
+            # Handle both direct array and nested structure
+            agent_list = agents_data if isinstance(agents_data, list) else agents_data.get("data", agents_data.get("agents", []))
+            
             # Process agent data according to Trio API structure
-            for agent_data in agents_data.get("agents", []):
+            for agent_data in agent_list:
+                # More robust field mapping based on actual Trio API responses
                 agent = AgentState(
-                    agent_id=agent_data.get("id", ""),
-                    name=agent_data.get("name", "Unknown"),
-                    status=self._map_agent_status(agent_data.get("status", "unavailable")),
-                    current_call_duration=agent_data.get("current_call_duration"),
-                    calls_handled_today=agent_data.get("calls_handled_today", 0),
-                    average_call_time=agent_data.get("average_call_time"),
+                    agent_id=str(agent_data.get("id", agent_data.get("agentId", ""))),
+                    name=agent_data.get("name", agent_data.get("displayName", agent_data.get("firstName", "Unknown"))),
+                    status=self._map_agent_status(agent_data.get("status", agent_data.get("state", "unavailable"))),
+                    current_call_duration=agent_data.get("currentCallDuration", agent_data.get("current_call_duration")),
+                    calls_handled_today=agent_data.get("callsHandledToday", agent_data.get("calls_handled_today", 0)),
+                    average_call_time=agent_data.get("averageCallTime", agent_data.get("average_call_time")),
                     last_updated=datetime.now()
                 )
                 agents.append(agent)
@@ -54,27 +70,30 @@ class TrioAPIClient:
     async def get_queue_metrics(self) -> List[QueueMetrics]:
         """Fetch current queue metrics from Trio API."""
         try:
-            session = await self.auth_manager.get_session()
-            # Use the correct Trio API endpoint for service states (queues)
-            response = await session.get(f"/cc/{settings.trio_contact_center_id}/services/state")
-            response.raise_for_status()
-            
-            queues_data = response.json()
+            endpoint = f"/cc/{settings.trio_contact_center_id}/services/state"
+            queues_data = await self._handle_api_request(endpoint)
             queues = []
             
+            # Handle both direct array and nested structure
+            service_list = queues_data if isinstance(queues_data, list) else queues_data.get("data", queues_data.get("services", []))
+            
             # Process queue data according to Trio API structure
-            for queue_data in queues_data.get("services", []):
-                wait_time = queue_data.get("current_wait_time", 0)
+            for queue_data in service_list:
+                # More robust field mapping for different response formats
+                wait_time = queue_data.get("currentWaitTime", queue_data.get("current_wait_time", 
+                           queue_data.get("waitTime", 0)))
                 
                 queue = QueueMetrics(
-                    queue_id=queue_data.get("id", ""),
-                    queue_name=queue_data.get("name", "Unknown Queue"),
-                    current_wait_time=wait_time,
-                    queue_depth=queue_data.get("queue_depth", 0),
-                    status=self._determine_queue_status(wait_time),
-                    calls_waiting=queue_data.get("calls_waiting", 0),
-                    longest_wait_time=queue_data.get("longest_wait_time", 0),
-                    average_wait_time=queue_data.get("average_wait_time", 0.0),
+                    queue_id=str(queue_data.get("id", queue_data.get("serviceId", ""))),
+                    queue_name=queue_data.get("name", queue_data.get("serviceName", "Unknown Queue")),
+                    current_wait_time=int(wait_time) if wait_time is not None else 0,
+                    queue_depth=queue_data.get("queueDepth", queue_data.get("queue_depth", 
+                               queue_data.get("queueLength", 0))),
+                    status=self._determine_queue_status(int(wait_time) if wait_time is not None else 0),
+                    calls_waiting=queue_data.get("callsWaiting", queue_data.get("calls_waiting", 
+                                 queue_data.get("queueSize", 0))),
+                    longest_wait_time=queue_data.get("longestWaitTime", queue_data.get("longest_wait_time", 0)),
+                    average_wait_time=float(queue_data.get("averageWaitTime", queue_data.get("average_wait_time", 0.0))),
                     last_updated=datetime.now()
                 )
                 queues.append(queue)

@@ -22,6 +22,7 @@ except ImportError:
 
 from api_client import api_client
 from models import DashboardData, AgentState, QueueMetrics, ServiceLevelMetrics, AlertData, HistoricalData
+from admin_api import admin_router, theme_router
 
 # Configure logging
 logging.basicConfig(
@@ -86,6 +87,10 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With"],
 )
+
+# Include admin and theme API routers
+app.include_router(admin_router)
+app.include_router(theme_router)
 
 
 @app.get("/")

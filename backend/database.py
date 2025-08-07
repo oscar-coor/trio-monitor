@@ -2,9 +2,9 @@
 
 from datetime import datetime, timedelta
 from typing import List, Optional
-from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, Boolean, Text
+from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, Boolean, Text, Date, Time, JSON, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import sessionmaker, Session, relationship
 from config import settings
 
 Base = declarative_base()
@@ -80,6 +80,104 @@ class HistoricalDataDB(Base):
     service_level = Column(Float)
     total_agents = Column(Integer)
     available_agents = Column(Integer)
+
+
+# Admin Configuration Database Models
+
+class MonitoredServiceDB(Base):
+    """Monitored services database model."""
+    __tablename__ = "monitored_services"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    trio_service_id = Column(String, unique=True, index=True)
+    service_name = Column(String)
+    sla_target_seconds = Column(Integer, default=20)
+    warning_threshold_seconds = Column(Integer, default=15)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.now)
+    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
+
+
+class MonitoredUserDB(Base):
+    """Monitored users database model."""
+    __tablename__ = "monitored_users"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    trio_user_id = Column(String, unique=True, index=True)
+    user_name = Column(String)
+    display_name = Column(String)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.now)
+    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
+
+
+class TimeWindowDB(Base):
+    """Time windows database model."""
+    __tablename__ = "time_windows"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String)  # "Vardagar" / "Helger"
+    start_time = Column(Time)
+    end_time = Column(Time)
+    weekdays = Column(JSON)  # [1,2,3,4,5] for Mon-Fri
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.now)
+    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
+
+
+class SLAMetricsDB(Base):
+    """SLA metrics database model."""
+    __tablename__ = "sla_metrics"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    service_id = Column(Integer, ForeignKey("monitored_services.id"))
+    measurement_date = Column(Date, index=True)
+    time_window_id = Column(Integer, ForeignKey("time_windows.id"))
+    average_wait_time = Column(Float)
+    total_calls = Column(Integer)
+    calls_within_sla = Column(Integer)
+    sla_percentage = Column(Float)
+    peak_wait_time = Column(Integer)
+    created_at = Column(DateTime, default=datetime.now)
+    
+    # Relationships
+    service = relationship("MonitoredServiceDB")
+    time_window = relationship("TimeWindowDB")
+
+
+class ThemeScheduleDB(Base):
+    """Theme schedule database model."""
+    __tablename__ = "theme_schedules"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String)  # "Dagstema" / "Natttema"
+    theme_type = Column(String)  # "light" / "dark"
+    start_time = Column(Time)
+    end_time = Column(Time)
+    weekdays = Column(JSON)  # [1,2,3,4,5,6,7]
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.now)
+    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
+
+
+class ThemeSettingsDB(Base):
+    """Theme settings database model."""
+    __tablename__ = "theme_settings"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    theme_type = Column(String)  # "light" / "dark"
+    primary_color = Column(String, default="#1976d2")
+    background_color = Column(String, default="#ffffff")
+    surface_color = Column(String, default="#f5f5f5")
+    text_primary = Column(String, default="#000000")
+    text_secondary = Column(String, default="#666666")
+    border_color = Column(String, default="#e0e0e0")
+    success_color = Column(String, default="#4caf50")
+    warning_color = Column(String, default="#ff9800")
+    error_color = Column(String, default="#f44336")
+    is_default = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.now)
+    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
 
 
 # Database setup

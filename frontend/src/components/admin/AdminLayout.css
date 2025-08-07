@@ -1,0 +1,161 @@
+/* Admin Layout Styles */
+
+.admin-layout {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.admin-header {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  padding: 2rem;
+  text-align: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+}
+
+.admin-header h1 {
+  margin: 0 0 0.5rem 0;
+  color: #2c3e50;
+  font-size: 2.5rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.admin-icon {
+  font-size: 2.5rem;
+  animation: rotate 3s ease-in-out infinite alternate;
+}
+
+@keyframes rotate {
+  from { transform: rotate(-5deg); }
+  to { transform: rotate(5deg); }
+}
+
+.admin-subtitle {
+  color: #7f8c8d;
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+.admin-nav {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 1rem 2rem;
+  overflow-x: auto;
+}
+
+.nav-tabs {
+  display: flex;
+  gap: 0.5rem;
+  min-width: fit-content;
+}
+
+.nav-tab {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  padding: 1rem 1.5rem;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1rem;
+  font-weight: 500;
+  white-space: nowrap;
+  min-width: fit-content;
+}
+
+.nav-tab:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.nav-tab.active {
+  background: rgba(255, 255, 255, 0.9);
+  color: #2c3e50;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  transform: translateY(-1px);
+}
+
+.tab-icon {
+  font-size: 1.2rem;
+}
+
+.tab-label {
+  font-weight: 500;
+}
+
+.admin-content {
+  padding: 2rem;
+  min-height: calc(100vh - 200px);
+}
+
+.content-wrapper {
+  max-width: 1200px;
+  margin: 0 auto;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .admin-header {
+    padding: 1.5rem 1rem;
+  }
+  
+  .admin-header h1 {
+    font-size: 2rem;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .admin-nav {
+    padding: 1rem;
+  }
+  
+  .nav-tab {
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+  }
+  
+  .admin-content {
+    padding: 1rem;
+  }
+  
+  .content-wrapper {
+    padding: 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .nav-tabs {
+    flex-wrap: wrap;
+  }
+  
+  .nav-tab {
+    flex: 1;
+    justify-content: center;
+    min-width: calc(50% - 0.25rem);
+  }
+  
+  .tab-label {
+    display: none;
+  }
+  
+  .tab-icon {
+    font-size: 1.5rem;
+  }
+}

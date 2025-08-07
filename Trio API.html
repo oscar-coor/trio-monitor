@@ -1,0 +1,1482 @@
+<!DOCTYPE html>
+<!-- saved from url=(0045)https://wfaltelvs065.ltdalarna.se/te/api/help -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
+    <meta name="viewport" content="width=device-width">
+    <title>Trio API</title>
+    
+</head>
+<body>
+    
+
+<link type="text/css" href="./Trio API_files/HelpPage.css" rel="stylesheet">
+<header class="help-page">
+    <img id="img_logo" alt="Logo" src="./Trio API_files/EI_logo.png">
+    <div class="content-wrapper">
+        <div class="float-left">
+            <h1>Trio API</h1>
+        </div>
+    </div>
+</header>
+<div id="body" class="help-page">
+    <section class="featured">
+        <div class="content-wrapper">
+            <h2>Introduction</h2>
+            <p>
+                The Trio API is an API for 3rd party developers to view, add and update
+                data in Trio. It provides programmatic access to Contact Center configuration
+                data, to retrieve real time Contact Center data and to create, update and delete tasks in 
+                the Contact Center queue. In addition, it provides access to read, add and update 
+                subscriber data in the Company Directory. The API can for example be used for wallboard 
+                applications, to display contact center status such as current waiting time and queue length on a website or for provisioning of users.
+            </p>
+
+            <h3>About this Help</h3>
+            <p>
+                This help describes the functionality, syntax and formats used in the API for handling client requests/responses.<br>
+                More information about requests/responses can be found by clicking the resource links. All responses have link and data collections which can be seen in detail by clicking the Type Collection link.
+            </p>
+
+            <h3>Authentication and Authorization</h3>
+            <p>
+                Successful authentication (login) will provide an access token which must be provided in all further requests. The API user authorization rights are controller by Trio Admin. See the Login resource for details.<br>
+            </p>
+
+            <h3>Contact Center configuration changes</h3>
+            <p>
+                Changes to the Contact Center data, e.g. agents, will automatically be activated by the Queue Process which occurs one minute after the latest successful change.
+            </p>
+
+            <h3>Content encoding</h3>
+            <p>
+                To control character encoding for a request, specify the encoding like 'Content-Type':'application/json;charset=iso-8859-1'.<br>
+            </p>
+
+            <h3>Failover</h3>
+            <p>
+                The Data collection (ApiDataDto) in the Api resource gives information about the hostname of the primary (primaryServer) and secondary (secondaryServer) Trio servers.
+                If the system is running in failover mode, calls to the primary server will be redirected (307 Temporary Redirect) and vice versa when running in normal mode.
+                The client must then reauthenticate itself aginst the secondary server to get a new access token. Redirection can be turned off by specifying the query string '?redirect=false'<br>
+                <br>
+                Changes to directory data (e.g. creating or updating subscribers) is disabled while the system is operating in failover mode.
+                Reading existing directory data is however still possible when communicating with the secondary server.
+            </p>
+
+            <h3>Filtering</h3>
+            <p>
+                Two types of filtering exists. Either filtering on the resource itself (1) or the actual data in the resource response can be filtered (2).<br>
+                1. Resources that return collections of data can be filtered by specifying the appropriate field name to the query string (see the 'Request Information' part in the resource page for field name), eg. /api/cc/1/services?name=cust<br>
+                2. Collection fields (members) in the reply can be filtered by specifying the 'fields' query string field to a comma separated list of property names of the properties to be included in the collection reply. Eg. /api/cc/1/services/1/state?fields=open,servicename. Most resources have default filtering enabled that can be changed this way.<br>
+                Note that the two filtering types can be combined. Eg. /api/cc/1/services?name=cust&amp;fields=serviceid
+            </p>
+
+            <h3>Links</h3>
+            <p>
+                All resources returns link collections that can be used to dynamically build a page tree.<br>
+                Please do not hard code URIs as they may change in future releases.<br>
+            </p>
+
+            <h3>Media types</h3>
+            <p>
+                Default media type is JSON (application/json). To tell the API that you want to work with XML, set both the HTTP 'Accept' and 'Content-Type' headers to 'application/xml'.<br>
+                To get indented (easier to read) responses when debugging/developing, specify the header 'Accept':'text/html'.<br>
+            </p>
+
+            <h3>Paging</h3>
+            <p>
+                Resources that return collections with more than 10 elements will be using paging to reduce the amount of data sent in one reply.<br>
+                The HTTP header will contain an 'X-Pagination' entry with 'currentPage', 'pageSize', 'totalCount', 'totalPages', 'previousPageLink' and 'nextPageLink' values. The default page size is 10.<br>
+            </p>
+
+            <h3>Permission and Access Rights</h3>
+            <p>
+                The client will only get data that matches the permissions/access rights/groups set in Trio Administrator. Changes to the configuration of permissions/access rights/groups will be applied when the access token is refreshed, which should occur within an hour (default value), or when it is done manually.<br>
+            </p>
+
+            <h3>Sorting</h3>
+            <p>
+                Resources that return collections of data can be sorted by the setting the 'sort' field to a comma separated list of the collection properties (member) names, eg. /api/cc/1/services?sort=servicename<br>
+                Sorting can be reversed by preceeding the name with a '-' character.<br>
+            </p>
+
+            <h3>URI encoding</h3>
+            <p>
+                When using non 7-bit ASCII characters in URIs, they need to be URL (percent) encoded using UTF-8 or ISO-8859-1. For example 'Smörgåsbord' -&gt; 'Sm%C3%B6rg%C3%A5sbord'<br>
+            </p>
+        </div>
+    </section>
+    <section class="content-wrapper main-content clear-fix">
+        <div class="content-wrapper">
+            <h2>Resources</h2>
+        </div>
+
+
+<h3 id="Api">Api</h3>
+    <p>
+            API base URI, http://[TESERVER]/te/api
+            </p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/GET-">GET </a></td>
+            <td class="api-documentation">
+                <p>
+            Information about the Api (no authentication required).
+            </p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<h3 id="Login">Login</h3>
+    <p>
+            The login request is used to obtain access and refresh tokens that must be used in subsequent requests.
+            The request must have the API client key set as Basic authentication in the Authorization header. The API client key is an encrypted Base64 ISO-8859-1 encoded string that Enghouse will provide. 
+            Username and password for the API user (must be Base64 ISO-8859-1 encoded) are placed in the "form data set" as "username" and "password" with content type "application/x-www-form-urlencoded". 
+            When the client has obtained a valid access token it can do authenticated API requests with a bearer token using the 'Authorization' request header field with the 'Bearer' HTTP authorization scheme. 
+            The default access token lifetime is 3600 seconds (1 hour) and a new request should be made with the refresh token placed in the "form data set" as "refresh_token" to renew the access token before or after it has has expired.
+            The default maximum refresh token lifetime is 2592000 seconds (30 days) and the client must do a new login when the refresh token has expired.
+            </p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/POST-login">POST login</a></td>
+            <td class="api-documentation">
+                <p>
+            Get access and refresh tokens.
+            </p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<h3 id="RefreshLogin">RefreshLogin</h3>
+    <p>
+            The refreshlogin request should be used to renew the access token before or after it has expired. 
+            The request must have the API client key set as Basic authentication in the Authorization header. The API client key is an encrypted Base64 ISO-8859-1 encoded string that Enghouse will provide. 
+            The refresh token is placed in the "form data set" as "refresh_token" with content type "application/x-www-form-urlencoded". 
+            When the client has obtained a new access token it can do authenticated API requests with a bearer token using the 'Authorization' request header field with the 'Bearer' HTTP authorization scheme. 
+            The default access token lifetime is 3600 seconds (1 hour). The default maximum refresh token lifetime is 2592000 seconds (30 days).
+            </p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/POST-refreshlogin">POST refreshlogin</a></td>
+            <td class="api-documentation">
+                <p>
+            Renew access and refresh tokens.
+            </p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<h3 id="Security">Security</h3>
+    <p>
+            The security node is the base node for all access right related resources..
+            </p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/GET-security">GET security</a></td>
+            <td class="api-documentation">
+                <p>
+            List all accessible resource types in the security.
+            </p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<h3 id="SecurityGroups">SecurityGroups</h3>
+    <p>
+            Security Groups Management.
+            </p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/GET-security-groups_subsystemId_extId_groupId_resourceTypeId">GET security/groups?subsystemId={subsystemId}&amp;extId={extId}&amp;groupId={groupId}&amp;resourceTypeId={resourceTypeId}</a></td>
+            <td class="api-documentation">
+                <p>
+            Get list of security groups.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/GET-security-groups-groupId">GET security/groups/{groupId}</a></td>
+            <td class="api-documentation">
+                <p>
+            Get a security group.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/POST-security-groups">POST security/groups</a></td>
+            <td class="api-documentation">
+                <p>
+            Create a new security group.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/PATCH-security-groups-groupId">PATCH security/groups/{groupId}</a></td>
+            <td class="api-documentation">
+                <p>
+            Update a security group.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/DELETE-security-groups-groupId">DELETE security/groups/{groupId}</a></td>
+            <td class="api-documentation">
+                <p>
+            Delete a security group.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/POST-security-groups-groupId-members">POST security/groups/{groupId}/members</a></td>
+            <td class="api-documentation">
+                <p>
+            Create a new security group member.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/DELETE-security-groups-groupId-members-memberId">DELETE security/groups/{groupId}/members/{memberId}</a></td>
+            <td class="api-documentation">
+                <p>
+            Delete a security group member.
+            </p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<h3 id="SecurityAgents">SecurityAgents</h3>
+    <p>
+            Agent Rights Management.
+            </p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/GET-security-agents_subsystemId_agents">GET security/agents?subsystemId={subsystemId}&amp;agents={agents}</a></td>
+            <td class="api-documentation">
+                <p>
+            Get list of agent rights.
+            </p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<h3 id="SecurityServices">SecurityServices</h3>
+    <p>
+            Services Rights Management.
+            </p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/GET-security-services_subsystemId_services">GET security/services?subsystemId={subsystemId}&amp;services={services}</a></td>
+            <td class="api-documentation">
+                <p>
+            Get list of service rights.
+            </p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<h3 id="ContactCenters">ContactCenters</h3>
+    <p>
+            Contact Center management.
+            </p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/GET-cc_page_pageSize_sort_id_name_fields">GET cc?page={page}&amp;pageSize={pageSize}&amp;sort={sort}&amp;id={id}&amp;name={name}&amp;fields={fields}</a></td>
+            <td class="api-documentation">
+                <p>
+            Get all Contact Centers.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/GET-cc-ccid_fields">GET cc/{ccid}?fields={fields}</a></td>
+            <td class="api-documentation">
+                <p>
+            Get a specific Contact Center.
+            </p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<h3 id="Agents">Agents</h3>
+    <p>
+            Contact Center agent management.
+            </p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/GET-cc-ccid-agents_page_pageSize_sort_id_firstName_lastName_fields">GET cc/{ccid}/agents?page={page}&amp;pageSize={pageSize}&amp;sort={sort}&amp;id={id}&amp;firstName={firstName}&amp;lastName={lastName}&amp;fields={fields}</a></td>
+            <td class="api-documentation">
+                <p>
+            Get all Contact Center agents.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/GET-cc-ccid-agents-agentid_fields">GET cc/{ccid}/agents/{agentid}?fields={fields}</a></td>
+            <td class="api-documentation">
+                <p>
+            Get a specific Contact Center agent.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/PATCH-cc-ccid-agents-agentid">PATCH cc/{ccid}/agents/{agentid}</a></td>
+            <td class="api-documentation">
+                <p>
+            Update Contact Center agent configuration.
+            </p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<h3 id="AgentState">AgentState</h3>
+    <p>
+            Get current state for Contact Center agents.
+            </p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/GET-cc-ccid-agents-state_page_pageSize_sort_id_fields">GET cc/{ccid}/agents/state?page={page}&amp;pageSize={pageSize}&amp;sort={sort}&amp;id={id}&amp;fields={fields}</a></td>
+            <td class="api-documentation">
+                <p>
+            Get current state for all Contact Center agents.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/GET-cc-ccid-agents-agentid-state_fields">GET cc/{ccid}/agents/{agentid}/state?fields={fields}</a></td>
+            <td class="api-documentation">
+                <p>
+            Get current state for a specific Contact Center agent.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/PATCH-cc-ccId-agents-agentId-state">PATCH cc/{ccId}/agents/{agentId}/state</a></td>
+            <td class="api-documentation">
+                <p>
+            Set current state for a specific Contact Center agent.\n
+            Note! The used agentID must be logged in by request PATCH 'cc/{ccId}/agents/{agentId}/login' before this resource can be used.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/PATCH-cc-ccId-agents-agentId-login">PATCH cc/{ccId}/agents/{agentId}/login</a></td>
+            <td class="api-documentation">
+                <p>
+            Set logon state for a specific Contact Center agent.
+            </p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<h3 id="AgentGroups">AgentGroups</h3>
+    <p>
+            Contact Center agent group management.
+            </p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/GET-cc-ccid-agentgroups_page_pageSize_sort_id_name_fields">GET cc/{ccid}/agentgroups?page={page}&amp;pageSize={pageSize}&amp;sort={sort}&amp;id={id}&amp;name={name}&amp;fields={fields}</a></td>
+            <td class="api-documentation">
+                <p>
+            Get all Contact Center agent groups.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/GET-cc-ccid-agentgroups-id_fields">GET cc/{ccid}/agentgroups/{id}?fields={fields}</a></td>
+            <td class="api-documentation">
+                <p>
+            Get a specific Contact Center agent group.
+            </p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<h3 id="Services">Services</h3>
+    <p>
+            Contact Center service management.
+            </p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/GET-cc-ccid-services_page_pageSize_sort_id_name_groupId_fields">GET cc/{ccid}/services?page={page}&amp;pageSize={pageSize}&amp;sort={sort}&amp;id={id}&amp;name={name}&amp;groupId={groupId}&amp;fields={fields}</a></td>
+            <td class="api-documentation">
+                <p>
+            Get all Contact Center services.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/GET-cc-ccid-services-serviceid_fields">GET cc/{ccid}/services/{serviceid}?fields={fields}</a></td>
+            <td class="api-documentation">
+                <p>
+            Get a specific Contact Center service.
+            </p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<h3 id="ServiceState">ServiceState</h3>
+    <p>
+            Get current state for Contact Center services.
+            </p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/GET-cc-ccid-services-state_page_pageSize_sort_id_name_fields">GET cc/{ccid}/services/state?page={page}&amp;pageSize={pageSize}&amp;sort={sort}&amp;id={id}&amp;name={name}&amp;fields={fields}</a></td>
+            <td class="api-documentation">
+                <p>
+            Get current state for all Contact Center services.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/GET-cc-ccid-services-serviceid-state_fields">GET cc/{ccid}/services/{serviceid}/state?fields={fields}</a></td>
+            <td class="api-documentation">
+                <p>
+            Get current state for a specific Contact Center service.
+            </p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<h3 id="ServiceGroups">ServiceGroups</h3>
+    <p>
+            Contact Center service group management.
+            </p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/GET-cc-ccid-servicegroups_page_pageSize_sort_id_name_fields">GET cc/{ccid}/servicegroups?page={page}&amp;pageSize={pageSize}&amp;sort={sort}&amp;id={id}&amp;name={name}&amp;fields={fields}</a></td>
+            <td class="api-documentation">
+                <p>
+            Get all Contact Center service groups.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/GET-cc-ccid-servicegroups-id_fields">GET cc/{ccid}/servicegroups/{id}?fields={fields}</a></td>
+            <td class="api-documentation">
+                <p>
+            Get a specific Contact Center service group.
+            </p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<h3 id="Cases">Cases</h3>
+    <p>
+            Contact Center case management.
+            <br></p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/GET-cc-ccid-services-cases_page_pageSize_sort_vid_jobno_cust_sid_caseClass_caseType_fields">GET cc/{ccid}/services/cases?page={page}&amp;pageSize={pageSize}&amp;sort={sort}&amp;vid={vid}&amp;jobno={jobno}&amp;cust={cust}&amp;sid={sid}&amp;caseClass={caseClass}&amp;caseType={caseType}&amp;fields={fields}</a></td>
+            <td class="api-documentation">
+                <p>
+            Get all cases.<br><br>
+            Note! The response can contain up to a maximum of 20 cases per service. A specific case can however always be retrieved until the case is finished.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/GET-cc-ccid-services-cases-jobno_fields">GET cc/{ccid}/services/cases/{jobno}?fields={fields}</a></td>
+            <td class="api-documentation">
+                <p>
+            Get a specific case. 
+            <br>Note! If this request is issued directly after a POST for creation of a 'Task' an http status code 404 may be returned. In that case the request should be re-sent after a couple of seconds.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/POST-cc-ccid-services-serviceid-cases">POST cc/{ccid}/services/{serviceid}/cases</a></td>
+            <td class="api-documentation">
+                <p>
+            Creates a case. Note! Only applies to case of type 'Task'.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/PATCH-cc-ccid-services-cases-jobno">PATCH cc/{ccid}/services/cases/{jobno}</a></td>
+            <td class="api-documentation">
+                <p>
+            Updates a case. Note! Only applies to case of type 'Task'.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/DELETE-cc-ccid-services-cases-jobno">DELETE cc/{ccid}/services/cases/{jobno}</a></td>
+            <td class="api-documentation">
+                <p>
+            Deletes a case. Note! Only applies to case of type 'Task'.
+            </p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<h3 id="Roles">Roles</h3>
+    <p>
+            Contact Center role management.
+            </p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/GET-cc-ccid-roles_page_pageSize_sort_id_name_fields">GET cc/{ccid}/roles?page={page}&amp;pageSize={pageSize}&amp;sort={sort}&amp;id={id}&amp;name={name}&amp;fields={fields}</a></td>
+            <td class="api-documentation">
+                <p>
+            Get all Contact Center roles.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/GET-cc-ccid-roles-roleid_fields">GET cc/{ccid}/roles/{roleid}?fields={fields}</a></td>
+            <td class="api-documentation">
+                <p>
+            Get a specific Contact Center role.
+            </p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<h3 id="Schedules">Schedules</h3>
+    <p>
+            Contact Center schedule management.
+            </p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/GET-cc-ccid-schedules_page_pageSize_sort_id_name_exceptionListID_fields">GET cc/{ccid}/schedules?page={page}&amp;pageSize={pageSize}&amp;sort={sort}&amp;id={id}&amp;name={name}&amp;exceptionListID={exceptionListID}&amp;fields={fields}</a></td>
+            <td class="api-documentation">
+                <p>
+            Get all Contact Center schedules.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/GET-cc-ccid-schedules-scheduleid_fields">GET cc/{ccid}/schedules/{scheduleid}?fields={fields}</a></td>
+            <td class="api-documentation">
+                <p>
+            Get a specific Contact Center schedule.
+            </p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<h3 id="ScheduleExceptions">ScheduleExceptions</h3>
+    <p>
+            Contact Center schedule exception management.
+            </p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/GET-cc-ccid-schedules-exceptionlists_page_pageSize_sort_id_name_fields">GET cc/{ccid}/schedules/exceptionlists?page={page}&amp;pageSize={pageSize}&amp;sort={sort}&amp;id={id}&amp;name={name}&amp;fields={fields}</a></td>
+            <td class="api-documentation">
+                <p>
+            Get all Contact Center schedule exception lists.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/GET-cc-ccid-schedules-exceptionlists-id_fields">GET cc/{ccid}/schedules/exceptionlists/{id}?fields={fields}</a></td>
+            <td class="api-documentation">
+                <p>
+            Get a specific Contact Center schedule exception (list).
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/GET-cc-ccid-schedules-exceptionlists-id-exceptions_page_pageSize_sort_fields">GET cc/{ccid}/schedules/exceptionlists/{id}/exceptions?page={page}&amp;pageSize={pageSize}&amp;sort={sort}&amp;fields={fields}</a></td>
+            <td class="api-documentation">
+                <p>
+            Get all Contact Center schedule exceptions for a list.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/GET-cc-ccid-schedules-exceptionlists-listid-exceptions-id_fields">GET cc/{ccid}/schedules/exceptionlists/{listid}/exceptions/{id}?fields={fields}</a></td>
+            <td class="api-documentation">
+                <p>
+            Get a specific Contact Center schedule exception.
+            </p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<h3 id="Skills">Skills</h3>
+    <p>
+            Contact Center skill management.
+            </p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/GET-cc-ccid-skills_page_pageSize_sort_userId_roleId_serviceId_fields">GET cc/{ccid}/skills?page={page}&amp;pageSize={pageSize}&amp;sort={sort}&amp;userId={userId}&amp;roleId={roleId}&amp;serviceId={serviceId}&amp;fields={fields}</a></td>
+            <td class="api-documentation">
+                <p>
+            Get all Contact Center skills.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/GET-cc-ccid-skills-uid">GET cc/{ccid}/skills/{uid}</a></td>
+            <td class="api-documentation">
+                <p>
+            Get a specific Contact Center skill.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/POST-cc-ccid-skills">POST cc/{ccid}/skills</a></td>
+            <td class="api-documentation">
+                <p>
+            Create a Contact Center skill.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/PATCH-cc-ccid-skills-uid">PATCH cc/{ccid}/skills/{uid}</a></td>
+            <td class="api-documentation">
+                <p>
+            Update a Contact Center skill.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/DELETE-cc-ccid-skills-uid">DELETE cc/{ccid}/skills/{uid}</a></td>
+            <td class="api-documentation">
+                <p>
+            Delete a Contact Center skill.
+            </p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<h3 id="SkillProfiles">SkillProfiles</h3>
+    <p>
+            Get Contact Center skill profile management.
+            </p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/GET-cc-ccid-skillprofiles_page_pageSize_sort_profileId_name_fields">GET cc/{ccid}/skillprofiles?page={page}&amp;pageSize={pageSize}&amp;sort={sort}&amp;profileId={profileId}&amp;name={name}&amp;fields={fields}</a></td>
+            <td class="api-documentation">
+                <p>
+            Get all Contact Center skill profiles.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/GET-cc-ccid-skillprofiles-profileid_fields">GET cc/{ccid}/skillprofiles/{profileid}?fields={fields}</a></td>
+            <td class="api-documentation">
+                <p>
+            Get a specific Contact Center skill profile.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/POST-cc-ccid-skillprofiles">POST cc/{ccid}/skillprofiles</a></td>
+            <td class="api-documentation">
+                <p>
+            Create a Contact Center skill profile.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/PATCH-cc-ccid-skillprofiles-profileid">PATCH cc/{ccid}/skillprofiles/{profileid}</a></td>
+            <td class="api-documentation">
+                <p>
+            Update a Contact Center skill profile.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/DELETE-cc-ccid-skillprofiles-profileid">DELETE cc/{ccid}/skillprofiles/{profileid}</a></td>
+            <td class="api-documentation">
+                <p>
+            Delete a Contact Center skill profile.
+            </p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<h3 id="SkillProfileItems">SkillProfileItems</h3>
+    <p>
+            Contact Center skill profile items management.
+            </p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/GET-cc-ccid-skillprofiles-profileId-skillprofileitems_page_pageSize_sort_roleId_serviceId_fields">GET cc/{ccid}/skillprofiles/{profileId}/skillprofileitems?page={page}&amp;pageSize={pageSize}&amp;sort={sort}&amp;roleId={roleId}&amp;serviceId={serviceId}&amp;fields={fields}</a></td>
+            <td class="api-documentation">
+                <p>
+            Get all Contact Center skill profile items.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/GET-cc-ccid-skillprofiles-profileid-skillprofileitems-uid">GET cc/{ccid}/skillprofiles/{profileid}/skillprofileitems/{uid}</a></td>
+            <td class="api-documentation">
+                <p>
+            Get a specific Contact Center skill profile item.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/POST-cc-ccid-skillprofiles-profileid-skillprofileitems">POST cc/{ccid}/skillprofiles/{profileid}/skillprofileitems</a></td>
+            <td class="api-documentation">
+                <p>
+            Create a Contact Center skill profile item.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/PATCH-cc-ccid-skillprofiles-profileid-skillprofileitems-uid">PATCH cc/{ccid}/skillprofiles/{profileid}/skillprofileitems/{uid}</a></td>
+            <td class="api-documentation">
+                <p>
+            Update a Contact Center skill profile item.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/DELETE-cc-ccid-skillprofiles-profileid-skillprofileitems-uid">DELETE cc/{ccid}/skillprofiles/{profileid}/skillprofileitems/{uid}</a></td>
+            <td class="api-documentation">
+                <p>
+            Delete a Contact Center skill profile item.
+            </p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<h3 id="Directory">Directory</h3>
+    <p>
+            The directory node is the base node for all company directory related resources (e.g. subscribers).
+            </p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/GET-directory">GET directory</a></td>
+            <td class="api-documentation">
+                <p>
+            List all accessible resource types in the directory.
+            </p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<h3 id="Subscribers">Subscribers</h3>
+    <p>
+            Subscriber Management.
+            </p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/GET-directory-subscribers_page_pageSize_sort_fields_keyword_extension_firstName_lastName_externalId_">GET directory/subscribers?page={page}&amp;pageSize={pageSize}&amp;sort={sort}&amp;fields={fields}&amp;keyword={keyword}&amp;extension={extension}&amp;firstName={firstName}&amp;lastName={lastName}&amp;externalId={externalId}&amp;systemId={systemId}&amp;custGroup={custGroup}&amp;custGroupId={custGroupId}&amp;cardKey={cardKey}&amp;extra1={extra1}&amp;extra2={extra2}&amp;extra3={extra3}&amp;extra4={extra4}&amp;extra5={extra5}&amp;extra6={extra6}&amp;extra7={extra7}&amp;extra8={extra8}&amp;extra9={extra9}&amp;extra10={extra10}&amp;extra11={extra11}&amp;extra12={extra12}&amp;extra13={extra13}&amp;extra14={extra14}&amp;extra15={extra15}&amp;extra16={extra16}&amp;extra17={extra17}&amp;extra18={extra18}&amp;extra19={extra19}&amp;extra20={extra20}&amp;subscriberId={subscriberId}&amp;properties={properties}</a></td>
+            <td class="api-documentation">
+                <p>
+            List subscribers (or a sub set by applying appropriate filter conditions).
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/GET-directory-subscribers-subscriberId">GET directory/subscribers/{subscriberId}</a></td>
+            <td class="api-documentation">
+                <p>
+            Get a specific subscriber.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/POST-directory-subscribers">POST directory/subscribers</a></td>
+            <td class="api-documentation">
+                <p>
+            Create a new subscriber.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/PATCH-directory-subscribers-subscriberId">PATCH directory/subscribers/{subscriberId}</a></td>
+            <td class="api-documentation">
+                <p>
+            Update a subscriber.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/DELETE-directory-subscribers-subscriberId">DELETE directory/subscribers/{subscriberId}</a></td>
+            <td class="api-documentation">
+                <p>
+            Delete a subscriber.
+            </p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<h3 id="DirectorySkills">DirectorySkills</h3>
+    <p>
+            Directory Skills Management.
+            </p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/GET-directory-skills">GET directory/skills</a></td>
+            <td class="api-documentation">
+                <p>
+            Get list of directory skills.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/GET-directory-skills-skillId">GET directory/skills/{skillId}</a></td>
+            <td class="api-documentation">
+                <p>
+            Get a directory skill.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/POST-directory-skills">POST directory/skills</a></td>
+            <td class="api-documentation">
+                <p>
+            Create a new directory skill.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/DELETE-directory-skills-skillId">DELETE directory/skills/{skillId}</a></td>
+            <td class="api-documentation">
+                <p>
+            Delete a directory skill.
+            </p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<h3 id="Capabilities">Capabilities</h3>
+    <p>
+            Capabilities Management.
+            </p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/GET-directory-capabilities">GET directory/capabilities</a></td>
+            <td class="api-documentation">
+                <p>
+            Get list of Capabilities.
+            </p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<h3 id="Departments">Departments</h3>
+    <p>
+            Departments Management.
+            </p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/GET-directory-departments">GET directory/departments</a></td>
+            <td class="api-documentation">
+                <p>
+            Get list of Departments.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/GET-directory-departments-departmentId">GET directory/departments/{departmentId}</a></td>
+            <td class="api-documentation">
+                <p>
+            Get a department.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/POST-directory-departments">POST directory/departments</a></td>
+            <td class="api-documentation">
+                <p>
+            Create an new department.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/DELETE-directory-departments-departmentId_recursive">DELETE directory/departments/{departmentId}?recursive={recursive}</a></td>
+            <td class="api-documentation">
+                <p>
+            Delete a department.
+            </p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<h3 id="Pbxs">Pbxs</h3>
+    <p>
+            PBX Management.
+            </p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/GET-directory-pbxs">GET directory/pbxs</a></td>
+            <td class="api-documentation">
+                <p>
+            Get list of PBX.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/GET-directory-pbxs-pbxId">GET directory/pbxs/{pbxId}</a></td>
+            <td class="api-documentation">
+                <p>
+            Get a PBX.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/POST-directory-pbxs">POST directory/pbxs</a></td>
+            <td class="api-documentation">
+                <p>
+            Create a new PBX.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/PATCH-directory-pbxs-pbxId">PATCH directory/pbxs/{pbxId}</a></td>
+            <td class="api-documentation">
+                <p>
+            Update a PBX.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/DELETE-directory-pbxs-pbxId">DELETE directory/pbxs/{pbxId}</a></td>
+            <td class="api-documentation">
+                <p>
+            Delete a PBX.
+            </p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<h3 id="Calls">Calls</h3>
+    <p>
+                Controller that handles (voice) calls.
+                Note! An agent must be logged in before one can use the REST resource MakeCall, POST 'cc/{ccid}/services/{serviceid}/calls'.
+            </p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/GET-cc-ccid-services-calls_page_pageSize_id_service_fields">GET cc/{ccid}/services/calls?page={page}&amp;pageSize={pageSize}&amp;id={id}&amp;service={service}&amp;fields={fields}</a></td>
+            <td class="api-documentation">
+                <p>
+                Retrieves the current state of all call cases.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/GET-cc-ccid-services-calls-jobno">GET cc/{ccid}/services/calls/{jobno}</a></td>
+            <td class="api-documentation">
+                <p>
+                Retrieves the current state of a call case.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/POST-cc-ccid-services-serviceid-calls">POST cc/{ccid}/services/{serviceid}/calls</a></td>
+            <td class="api-documentation">
+                <p>
+                Creates and starts a new outgoing call.
+                Note! The used agentID must be logged in by request PATCH 'cc/{ccId}/agents/{agentId}/login' before this resource can be used.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/PATCH-cc-ccid-services-calls-jobno">PATCH cc/{ccid}/services/calls/{jobno}</a></td>
+            <td class="api-documentation">
+                <p>
+            Updates a call to start or stop recording.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/DELETE-cc-ccid-services-calls-jobno">DELETE cc/{ccid}/services/calls/{jobno}</a></td>
+            <td class="api-documentation">
+                <p>
+            Delete a call
+            </p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<h3 id="Calendar">Calendar</h3>
+    <p>
+            Calendars Management.
+            </p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/GET-directory-calendarsystems">GET directory/calendarsystems</a></td>
+            <td class="api-documentation">
+                <p>
+            Get list of calendars.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/GET-directory-calendarsystems-calendarId">GET directory/calendarsystems/{calendarId}</a></td>
+            <td class="api-documentation">
+                <p>
+            Get a calendar.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/POST-directory-calendarsystems">POST directory/calendarsystems</a></td>
+            <td class="api-documentation">
+                <p>
+            Create a new calendar.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/PATCH-directory-calendarsystems-calendarId">PATCH directory/calendarsystems/{calendarId}</a></td>
+            <td class="api-documentation">
+                <p>
+            Update a calendar.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/DELETE-directory-calendarsystems-calendarId">DELETE directory/calendarsystems/{calendarId}</a></td>
+            <td class="api-documentation">
+                <p>
+            Delete a calendar.
+            </p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<h3 id="CustomerGroups">CustomerGroups</h3>
+    <p>
+            Customer groups management.
+            </p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/GET-directory-customergroups">GET directory/customergroups</a></td>
+            <td class="api-documentation">
+                <p>
+            Get list of customer groups.
+            </p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<h3 id="Titles">Titles</h3>
+    <p>
+            Titles Management.
+            </p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/GET-directory-titles">GET directory/titles</a></td>
+            <td class="api-documentation">
+                <p>
+            Get list of titles.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/GET-directory-titles-titleId">GET directory/titles/{titleId}</a></td>
+            <td class="api-documentation">
+                <p>
+            Get a title.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/POST-directory-titles">POST directory/titles</a></td>
+            <td class="api-documentation">
+                <p>
+            Create a new title.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/DELETE-directory-titles-titleId">DELETE directory/titles/{titleId}</a></td>
+            <td class="api-documentation">
+                <p>
+            Delete a title.
+            </p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<h3 id="Extensions">Extensions</h3>
+    <p>
+            Extension Management.
+            </p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/GET-directory-subscribers-subscriberId-extensions">GET directory/subscribers/{subscriberId}/extensions</a></td>
+            <td class="api-documentation">
+                <p>
+            Get subscribers list of extensions.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/GET-directory-subscribers-subscriberId-extensions-extensionId">GET directory/subscribers/{subscriberId}/extensions/{extensionId}</a></td>
+            <td class="api-documentation">
+                <p>
+            Get a subscribers specific extension.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/POST-directory-subscribers-subscriberId-extensions">POST directory/subscribers/{subscriberId}/extensions</a></td>
+            <td class="api-documentation">
+                <p>
+            Create a new extension.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/PATCH-directory-subscribers-subscriberId-extensions-extensionId">PATCH directory/subscribers/{subscriberId}/extensions/{extensionId}</a></td>
+            <td class="api-documentation">
+                <p>
+            Update a extension.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/DELETE-directory-subscribers-subscriberId-extensions-extensionId">DELETE directory/subscribers/{subscriberId}/extensions/{extensionId}</a></td>
+            <td class="api-documentation">
+                <p>
+            Delete a extension.
+            </p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<h3 id="ExtraNames">ExtraNames</h3>
+    <p>
+            ExtraName Management.
+            </p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/GET-directory-extrafieldnames">GET directory/extrafieldnames</a></td>
+            <td class="api-documentation">
+                <p>
+            Get list of extra names.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/GET-directory-extrafieldnames-extraNameId">GET directory/extrafieldnames/{extraNameId}</a></td>
+            <td class="api-documentation">
+                <p>
+            Get an extra name.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/POST-directory-extrafieldnames">POST directory/extrafieldnames</a></td>
+            <td class="api-documentation">
+                <p>
+            Create an new extra name.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/PATCH-directory-extrafieldnames-extraNameId">PATCH directory/extrafieldnames/{extraNameId}</a></td>
+            <td class="api-documentation">
+                <p>
+            Update an extra name.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/DELETE-directory-extrafieldnames-extraNameId">DELETE directory/extrafieldnames/{extraNameId}</a></td>
+            <td class="api-documentation">
+                <p>
+            Delete an extra name.
+            </p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<h3 id="Referrals">Referrals</h3>
+    <p>
+            Referral Management.
+            </p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/GET-directory-subscribers-subscriberId-referrals">GET directory/subscribers/{subscriberId}/referrals</a></td>
+            <td class="api-documentation">
+                <p>
+            Get subscribers list of Referrals.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/GET-directory-subscribers-subscriberId-referrals-referralId">GET directory/subscribers/{subscriberId}/referrals/{referralId}</a></td>
+            <td class="api-documentation">
+                <p>
+            Get a subscribers specific Referral.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/POST-directory-subscribers-subscriberId-Referrals">POST directory/subscribers/{subscriberId}/Referrals</a></td>
+            <td class="api-documentation">
+                <p>
+            Create a new Referral.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/PATCH-directory-subscribers-subscriberId-Referrals-ReferralId">PATCH directory/subscribers/{subscriberId}/Referrals/{ReferralId}</a></td>
+            <td class="api-documentation">
+                <p>
+            Update a Referral.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/DELETE-directory-subscribers-subscriberId-Referrals-ReferralId">DELETE directory/subscribers/{subscriberId}/Referrals/{ReferralId}</a></td>
+            <td class="api-documentation">
+                <p>
+            Delete a Referral.
+            </p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<h3 id="MessageChannels">MessageChannels</h3>
+    <p>
+            Extension Management.
+            </p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/GET-directory-subscribers-subscriberId-messagechannels">GET directory/subscribers/{subscriberId}/messagechannels</a></td>
+            <td class="api-documentation">
+                <p>
+            Get subscribers list of message channels.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/POST-directory-subscribers-subscriberId-messagechannels">POST directory/subscribers/{subscriberId}/messagechannels</a></td>
+            <td class="api-documentation">
+                <p>
+            Create a new message channel.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/DELETE-directory-subscribers-subscriberId-messagechannels-channelId">DELETE directory/subscribers/{subscriberId}/messagechannels/{channelId}</a></td>
+            <td class="api-documentation">
+                <p>
+            Delete a message channel.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/PUT-directory-subscribers-subscriberId-messagechannels">PUT directory/subscribers/{subscriberId}/messagechannels</a></td>
+            <td class="api-documentation">
+                <p>
+            Send message to message channels.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/PUT-directory-subscribers-subscriberId-messagechannels-channelId">PUT directory/subscribers/{subscriberId}/messagechannels/{channelId}</a></td>
+            <td class="api-documentation">
+                <p>
+            Send message to a specifik message channel.
+            </p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<h3 id="AddressSpaces">AddressSpaces</h3>
+    <p>
+            PBX Management.
+            </p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/GET-directory-addressspaces">GET directory/addressspaces</a></td>
+            <td class="api-documentation">
+                <p>
+            Get list of adress spaces.
+            </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://wfaltelvs065.ltdalarna.se/TE/API/Help/Api/GET-directory-addressspaces-asId">GET directory/addressspaces/{asId}</a></td>
+            <td class="api-documentation">
+                <p>
+            Get a adress space.
+            </p>
+            </td>
+        </tr>
+    </tbody>
+</table></section>
+</div>
+
+
+</body></html>

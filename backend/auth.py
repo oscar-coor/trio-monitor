@@ -27,7 +27,10 @@ class TrioAuthManager:
             self._session = httpx.AsyncClient(
                 base_url=self.base_url,
                 timeout=30.0,
-                headers={"Content-Type": "application/json"}
+                headers={
+                    "Content-Type": "application/json;charset=iso-8859-1",
+                    "Accept": "application/json"
+                }
             )
         
         # Ensure we have a valid token
@@ -67,8 +70,15 @@ class TrioAuthManager:
             "password": self.password
         }
         
-        async with httpx.AsyncClient(base_url=self.base_url, timeout=30.0) as client:
-            response = await client.post("/auth/login", json=auth_data)
+        async with httpx.AsyncClient(
+            base_url=self.base_url, 
+            timeout=30.0,
+            headers={
+                "Content-Type": "application/json;charset=iso-8859-1",
+                "Accept": "application/json"
+            }
+        ) as client:
+            response = await client.post("/login", json=auth_data)
             response.raise_for_status()
             
             auth_response = response.json()
@@ -91,11 +101,42 @@ class TrioAuthManager:
         # Add 5 minute buffer before expiration
         return datetime.now() < (self._token_expires - timedelta(minutes=5))
     
+    async def _handle_redirect(self, response: httpx.Response) -> str:
+        """Handle 307 Temporary Redirect for failover scenarios."""
+        if response.status_code == 307:
+            redirect_url = response.headers.get('Location')
+            if redirect_url:
+                logger.info(f"Failover redirect detected, switching to: {redirect_url}")
+                # Extract base URL from redirect
+                from urllib.parse import urlparse
+                parsed = urlparse(redirect_url)
+                new_base_url = f"{parsed.scheme}://{parsed.netloc}/te/api"
+                
+                # Update base URL and invalidate current session
+                self.base_url = new_base_url
+                if self._session:
+                    await self._session.aclose()
+                    self._session = None
+                self._auth_token = None
+                self._token_expires = None
+                
+                return new_base_url
+        return self.base_url
+
     async def test_connection(self) -> bool:
         """Test connection to Trio Enterprise API."""
         try:
             session = await self.get_session()
-            response = await session.get("/health")
+            # Use API info endpoint instead of health (more appropriate for Trio API)
+            response = await session.get("/")
+            
+            # Handle potential redirect
+            if response.status_code == 307:
+                await self._handle_redirect(response)
+                # Retry with new URL
+                session = await self.get_session()
+                response = await session.get("/")
+            
             return response.status_code == 200
         except Exception as e:
             logger.error(f"Connection test failed: {e}")
