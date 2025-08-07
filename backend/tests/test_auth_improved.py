@@ -16,7 +16,7 @@ from auth_improved import ImprovedAuthenticationManager
 
 
 class TestImprovedAuthManager:
-    """Test suite for ImprovedAuthManager."""
+    """Test suite for ImprovedAuthenticationManager."""
     
     @pytest.fixture
     def auth_manager(self):
@@ -29,7 +29,7 @@ class TestImprovedAuthManager:
             mock_settings.te_api_logout_endpoint = "/logout"
             mock_settings.auth_token_secret = "testsecret"
             mock_settings.auth_salt = "testsalt"
-            return ImprovedAuthManager()
+            return ImprovedAuthenticationManager()
     
     @pytest.fixture
     def mock_httpx_client(self):
