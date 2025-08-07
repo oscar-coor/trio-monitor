@@ -24,12 +24,14 @@ class TrioAPIClient:
         """Fetch current agent states from Trio API."""
         try:
             session = await self.auth_manager.get_session()
-            response = await session.get("/api/agents/status")
+            # Use the correct Trio API endpoint for agent states
+            response = await session.get(f"/cc/{settings.trio_contact_center_id}/agents/state")
             response.raise_for_status()
             
             agents_data = response.json()
             agents = []
             
+            # Process agent data according to Trio API structure
             for agent_data in agents_data.get("agents", []):
                 agent = AgentState(
                     agent_id=agent_data.get("id", ""),
@@ -42,7 +44,7 @@ class TrioAPIClient:
                 )
                 agents.append(agent)
             
-            logger.info(f"Retrieved {len(agents)} agent states")
+            logger.info(f"Retrieved {len(agents)} agent states from Trio API")
             return agents
             
         except Exception as e:
@@ -53,13 +55,15 @@ class TrioAPIClient:
         """Fetch current queue metrics from Trio API."""
         try:
             session = await self.auth_manager.get_session()
-            response = await session.get("/api/queues/metrics")
+            # Use the correct Trio API endpoint for service states (queues)
+            response = await session.get(f"/cc/{settings.trio_contact_center_id}/services/state")
             response.raise_for_status()
             
             queues_data = response.json()
             queues = []
             
-            for queue_data in queues_data.get("queues", []):
+            # Process queue data according to Trio API structure
+            for queue_data in queues_data.get("services", []):
                 wait_time = queue_data.get("current_wait_time", 0)
                 
                 queue = QueueMetrics(
@@ -75,7 +79,7 @@ class TrioAPIClient:
                 )
                 queues.append(queue)
             
-            logger.info(f"Retrieved {len(queues)} queue metrics")
+            logger.info(f"Retrieved {len(queues)} queue metrics from Trio API")
             return queues
             
         except Exception as e:
@@ -86,30 +90,46 @@ class TrioAPIClient:
         """Fetch service level metrics from Trio API."""
         try:
             session = await self.auth_manager.get_session()
-            response = await session.get("/api/service-level/today")
+            # Use the correct Trio API endpoint for cases (to calculate service level)
+            response = await session.get(f"/cc/{settings.trio_contact_center_id}/services/cases")
             response.raise_for_status()
             
             data = response.json()
             
-            total_calls = data.get("total_calls", 0)
-            calls_within_target = data.get("calls_answered_within_target", 0)
-            service_level = (calls_within_target / total_calls * 100) if total_calls > 0 else 0
+            # Calculate service level metrics from cases data
+            cases = data.get("cases", [])
+            total_calls = len(cases)
             
-            total_queue_time = data.get("total_queue_time", 0)
-            queue_limit_breached = total_queue_time > self.queue_time_limit
+            # Count calls answered within target time (20 seconds)
+            calls_within_target = sum(1 for case in cases if case.get("wait_time", 0) <= self.queue_time_limit)
+            
+            service_level_percentage = (calls_within_target / total_calls * 100) if total_calls > 0 else 0.0
+            
+            # Calculate average wait time
+            wait_times = [case.get("wait_time", 0) for case in cases]
+            average_wait_time = sum(wait_times) / len(wait_times) if wait_times else 0.0
+            
+            # Find peak wait time
+            peak_wait_time = max(wait_times) if wait_times else 0
+            
+            # Calculate total queue time
+            total_queue_time = sum(wait_times)
+            
+            # Check if queue time limit has been breached
+            queue_time_limit_breached = total_queue_time >= self.queue_time_limit
             
             metrics = ServiceLevelMetrics(
                 date=datetime.now(),
                 total_calls=total_calls,
                 calls_answered_within_target=calls_within_target,
-                service_level_percentage=service_level,
-                average_wait_time=data.get("average_wait_time", 0.0),
+                service_level_percentage=service_level_percentage,
+                average_wait_time=average_wait_time,
                 total_queue_time=total_queue_time,
-                peak_wait_time=data.get("peak_wait_time", 0),
-                queue_time_limit_breached=queue_limit_breached
+                peak_wait_time=peak_wait_time,
+                queue_time_limit_breached=queue_time_limit_breached
             )
             
-            logger.info(f"Retrieved service level metrics: {service_level:.1f}%")
+            logger.info(f"Retrieved service level metrics: {service_level_percentage:.1f}%")
             return metrics
             
         except Exception as e:

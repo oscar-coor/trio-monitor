@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     trio_api_username: str = os.getenv("TRIO_API_USERNAME", "")
     trio_api_password: str = os.getenv("TRIO_API_PASSWORD", "")
     trio_api_token: Optional[str] = os.getenv("TRIO_API_TOKEN")
+    trio_contact_center_id: str = os.getenv("TRIO_CONTACT_CENTER_ID", "1")
     
     # Database Configuration
     database_url: str = os.getenv("DATABASE_URL", "sqlite:///./db.sqlite")
