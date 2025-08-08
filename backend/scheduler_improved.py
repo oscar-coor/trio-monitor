@@ -153,7 +153,7 @@ class ImprovedTrioScheduler:
             await self._cache_data_safely(agents, queues, service_level, dashboard_data)
             
             # Update latest data
-            self.latest_data = dashboard_data.dict()
+            self.latest_data = dashboard_data.model_dump()
             self.alerts = alerts
             
             logger.info(f"Successfully polled: {len(agents)} agents, {len(queues)} queues")

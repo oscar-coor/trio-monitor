@@ -1,0 +1,23 @@
+line-length = 100
+indent-width = 4
+target-version = "py312"
+
+[lint]
+select = [
+  "E",   # pycodestyle errors
+  "F",   # pyflakes
+  "I",   # isort
+  "UP",  # pyupgrade
+]
+ignore = [
+  "E203",  # whitespace before ':' (black compatibility)
+]
+
+[format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"
+
+[lint.isort]
+known-first-party = ["backend"]
+force-single-line = false

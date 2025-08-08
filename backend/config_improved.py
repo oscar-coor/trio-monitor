@@ -203,7 +203,7 @@ class ImprovedSettings(BaseSettings):
     
     def get_safe_config(self) -> dict:
         """Get configuration without sensitive values for logging."""
-        config = self.dict()
+        config = self.model_dump()
         sensitive_keys = ["trio_password", "trio_token", "secret_key", "password_salt"]
         for key in sensitive_keys:
             if key in config and config[key]:

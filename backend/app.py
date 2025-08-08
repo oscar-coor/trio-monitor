@@ -161,7 +161,7 @@ async def get_alerts():
     """Get current alerts."""
     try:
         alerts = trio_scheduler.get_alerts()
-        return [alert.dict() for alert in alerts]
+        return [alert.model_dump() for alert in alerts]
     except Exception as e:
         logger.error(f"Error getting alerts: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")

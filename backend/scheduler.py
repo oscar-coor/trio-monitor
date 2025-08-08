@@ -130,7 +130,7 @@ class TrioScheduler:
                 db.close()
             
             # Update latest data
-            self.latest_data = dashboard_data.dict()
+            self.latest_data = dashboard_data.model_dump()
             self.alerts = alerts
             
             logger.info(f"Successfully polled data: {len(agents)} agents, {len(queues)} queues")

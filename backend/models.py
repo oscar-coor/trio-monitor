@@ -57,11 +57,7 @@ class ServiceLevelMetrics(BaseModel):
     peak_wait_time: int
     queue_time_limit_breached: bool
     last_updated: Optional[datetime] = None
-    
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
+
 
 
 class DashboardData(BaseModel):
@@ -107,11 +103,7 @@ class MonitoredService(BaseModel):
     is_active: bool = True
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
-    
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
+
 
 
 class MonitoredUser(BaseModel):
@@ -123,11 +115,7 @@ class MonitoredUser(BaseModel):
     is_active: bool = True
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
-    
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
+
 
 
 class TimeWindow(BaseModel):
@@ -140,12 +128,7 @@ class TimeWindow(BaseModel):
     is_active: bool = True
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
-    
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat(),
-            time: lambda v: v.isoformat()
-        }
+
 
 
 class SLAMetrics(BaseModel):
@@ -160,12 +143,7 @@ class SLAMetrics(BaseModel):
     sla_percentage: float
     peak_wait_time: Optional[int] = None
     created_at: Optional[datetime] = None
-    
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat(),
-            date: lambda v: v.isoformat()
-        }
+
 
 
 # Theme Configuration Models
@@ -187,12 +165,7 @@ class ThemeSchedule(BaseModel):
     is_active: bool = True
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
-    
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat(),
-            time: lambda v: v.isoformat()
-        }
+
 
 
 class ThemeSettings(BaseModel):

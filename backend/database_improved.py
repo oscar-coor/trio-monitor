@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from typing import List, Optional, Dict, Any, Generator
 from contextlib import contextmanager
 from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, Boolean, Text, Index
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from sqlalchemy.pool import NullPool

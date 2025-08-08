@@ -1,5 +1,11 @@
 # Trio Monitor - Realtidsövervakning för Trio Enterprise API
 
+[![CI – Python](https://github.com/OWNER/REPO/actions/workflows/python-ci.yml/badge.svg)](https://github.com/OWNER/REPO/actions/workflows/python-ci.yml)
+<!-- TODO: Ersätt OWNER/REPO ovan med ert GitHub org/repo-namn -->
+<!-- Exempel på coverage-badge (Codecov):
+[![codecov](https://codecov.io/gh/OWNER/REPO/branch/main/graph/badge.svg)](https://codecov.io/gh/OWNER/REPO)
+-->
+
 Ett modernt dashboard för realtidsövervakning av kötider i kontaktcenter med fokus på 20-sekunders gränsen och servicenivåmål på 80%.
 
 ## 🎯 Huvudfunktioner
@@ -169,10 +175,26 @@ Frontend körs på `http://localhost:3000`
 
 ## 🧪 Testning
 
-### Backend-tester
+### Backend-tester (med coverage)
 ```bash
 cd backend
-pytest tests/
+pytest -q --cov=backend --cov-report=term-missing
+```
+
+Generera XML-rapport lokalt (matchar CI):
+```bash
+pytest -q --cov=backend --cov-report=xml
+```
+
+### Typkontroll (mypy)
+```bash
+cd backend
+mypy .. --config-file ../mypy.ini
+```
+
+### Lint (ruff)
+```bash
+ruff check .
 ```
 
 ### Frontend-tester
