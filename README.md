@@ -46,6 +46,35 @@ frontend/
 └── package.json         # NPM-beroenden
 ```
 
+## 📚 Systemöversikt och Progressionsplan
+För en djupare beskrivning av arkitektur, datamodell, säkerhet, testning, milstolpar och backlog, se:
+- [Systemöversikt och Progressionsplan](./systemöversikt.md)
+
+## 🗂️ Backlog (M1–M6)
+Uppdatera länkarna nedan till riktiga issue‑URL:er i ert repo (GitHub/GitLab/Azure DevOps). T.ex. byt ut `REPO_URL` och id:n.
+
+- M1 Grundplattform: FastAPI/React skelett, polling‑stub, SQLite
+  - Epic/Issue: [M1 – Grundplattform][issue-m1]
+- M2 Realtidsmonitorering: Trio‑anrop, cache/TTL, `/api/stats`, dashboard‑UI
+  - Epic/Issue: [M2 – Realtidsmonitorering][issue-m2]
+- M3 SLA och historik: historiktabeller, SLA inom tidsfönster, grafer/export
+  - Epic/Issue: [M3 – SLA & historik][issue-m3]
+- M4 Admin‑gränssnitt: CRUD för köer/användare/SLA/tidsfönster/tema‑schema
+  - Epic/Issue: [M4 – Admin‑gränssnitt][issue-m4]
+- M5 Tema‑schema & härdning: auto‑tema, optimeringar, tester (≥80%)
+  - Epic/Issue: [M5 – Tema & härdning][issue-m5]
+- M6 Release & drift: dokumentation, CI/CD, miljöer, observability
+  - Epic/Issue: [M6 – Release & drift][issue-m6]
+
+Referenser (byt till riktiga länkar):
+
+[issue-m1]: https://REPO_URL/issues/1
+[issue-m2]: https://REPO_URL/issues/2
+[issue-m3]: https://REPO_URL/issues/3
+[issue-m4]: https://REPO_URL/issues/4
+[issue-m5]: https://REPO_URL/issues/5
+[issue-m6]: https://REPO_URL/issues/6
+
 ## 🚀 Installation och Setup
 
 ### 1. Backend Setup
