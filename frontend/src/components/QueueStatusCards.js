@@ -20,7 +20,7 @@ const QueueStatusCards = ({ queues, criticalCount, warningCount, goodCount }) =>
             </div>
             <h2 className="status-card-value text-success">{goodCount}</h2>
             <small className="text-muted">
-              <15 sekunder väntetid
+              &lt;15 sekunder väntetid
             </small>
             <div className="progress-custom mt-2">
               <div 
@@ -62,7 +62,7 @@ const QueueStatusCards = ({ queues, criticalCount, warningCount, goodCount }) =>
             </div>
             <h2 className="status-card-value text-danger">{criticalCount}</h2>
             <small className="text-muted">
-              >20 sekunder väntetid
+              &gt;20 sekunder väntetid
             </small>
             <div className="progress-custom mt-2">
               <div 
