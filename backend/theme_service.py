@@ -1,11 +1,12 @@
 """Theme service for managing automatic theme switching and custom theme settings."""
 
-from datetime import datetime, time as dt_time
-from typing import List, Optional
-from sqlalchemy.orm import Session
-from models import ThemeSchedule, ThemeSettings, ThemeType, ThemeStatusResponse
-from database import ThemeScheduleDB, ThemeSettingsDB
 import logging
+from datetime import datetime
+from datetime import time as dt_time
+
+from database import ThemeScheduleDB, ThemeSettingsDB
+from models import ThemeSchedule, ThemeSettings, ThemeStatusResponse, ThemeType
+from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +27,7 @@ class ThemeService:
         current_weekday = datetime.now().weekday() + 1  # 1=Monday, 7=Sunday
         
         # Get active theme schedules
-        schedules = db.query(ThemeScheduleDB).filter(ThemeScheduleDB.is_active == True).all()
+        schedules = db.query(ThemeScheduleDB).filter(ThemeScheduleDB.is_active).all()
         
         for schedule in schedules:
             if self._is_time_in_schedule(current_time, current_weekday, schedule):
@@ -49,12 +50,12 @@ class ThemeService:
             # Overnight schedule (e.g., 18:00-06:00)
             return time >= schedule.start_time or time <= schedule.end_time
     
-    def get_next_switch_time(self, db: Session) -> Optional[datetime]:
+    def get_next_switch_time(self, db: Session) -> datetime | None:
         """Get the next scheduled theme switch time."""
         current_time = datetime.now()
         current_weekday = current_time.weekday() + 1
         
-        schedules = db.query(ThemeScheduleDB).filter(ThemeScheduleDB.is_active == True).all()
+        schedules = db.query(ThemeScheduleDB).filter(ThemeScheduleDB.is_active).all()
         
         next_switches = []
         for schedule in schedules:
@@ -105,12 +106,16 @@ class ThemeService:
         self.manual_theme = None
         logger.info("Manual theme override cleared, returning to automatic")
     
-    def get_theme_schedules(self, db: Session) -> List[ThemeSchedule]:
+    def get_theme_schedules(self, db: Session) -> list[ThemeSchedule]:
         """Get all theme schedules."""
         schedules_db = db.query(ThemeScheduleDB).all()
         return [self._schedule_db_to_model(schedule) for schedule in schedules_db]
     
-    def update_theme_schedules(self, db: Session, schedules: List[ThemeSchedule]) -> List[ThemeSchedule]:
+    def update_theme_schedules(
+        self,
+        db: Session,
+        schedules: list[ThemeSchedule],
+    ) -> list[ThemeSchedule]:
         """Update theme schedules configuration."""
         # Clear existing schedules
         db.query(ThemeScheduleDB).delete()
@@ -133,7 +138,11 @@ class ThemeService:
         logger.info(f"Updated {len(schedules)} theme schedules")
         return updated_schedules
     
-    def get_theme_settings(self, db: Session, theme_type: Optional[ThemeType] = None) -> List[ThemeSettings]:
+    def get_theme_settings(
+        self,
+        db: Session,
+        theme_type: ThemeType | None = None,
+    ) -> list[ThemeSettings]:
         """Get theme settings, optionally filtered by theme type."""
         query = db.query(ThemeSettingsDB)
         if theme_type:

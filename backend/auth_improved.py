@@ -2,13 +2,12 @@
 
 import asyncio
 import hashlib
-import secrets
-from datetime import datetime, timedelta
-from typing import Optional, Dict, Any
-from contextlib import asynccontextmanager
-import httpx
 import logging
+from contextlib import asynccontextmanager
+from datetime import datetime, timedelta
+from typing import Any
 
+import httpx
 from config import settings
 
 logger = logging.getLogger(__name__)
@@ -18,12 +17,12 @@ class TokenManager:
     """Secure token management with automatic refresh."""
     
     def __init__(self):
-        self._token: Optional[str] = None
-        self._token_expiry: Optional[datetime] = None
-        self._refresh_token: Optional[str] = None
+        self._token: str | None = None
+        self._token_expiry: datetime | None = None
+        self._refresh_token: str | None = None
         self._lock = asyncio.Lock()
     
-    async def get_valid_token(self) -> Optional[str]:
+    async def get_valid_token(self) -> str | None:
         """Get a valid token, refreshing if necessary."""
         async with self._lock:
             if self._is_token_valid():
@@ -37,7 +36,7 @@ class TokenManager:
             
             return None
     
-    def set_token(self, token: str, expires_in: int = 3600, refresh_token: Optional[str] = None):
+    def set_token(self, token: str, expires_in: int = 3600, refresh_token: str | None = None):
         """Set new token with expiry."""
         self._token = token
         self._token_expiry = datetime.now() + timedelta(seconds=expires_in - 60)  # Refresh 1 min before expiry
@@ -71,11 +70,11 @@ class ImprovedAuthenticationManager:
     
     def __init__(self):
         self.token_manager = TokenManager()
-        self._session: Optional[httpx.AsyncClient] = None
+        self._session: httpx.AsyncClient | None = None
         self._session_lock = asyncio.Lock()
         self._failed_attempts = 0
         self._max_failed_attempts = 3
-        self._lockout_until: Optional[datetime] = None
+        self._lockout_until: datetime | None = None
     
     @asynccontextmanager
     async def get_session(self) -> httpx.AsyncClient:
@@ -211,14 +210,14 @@ class ImprovedAuthenticationManager:
                     timeout=5.0
                 )
                 return response.status_code == 200
-        except asyncio.TimeoutError:
+        except TimeoutError:
             logger.warning("Connection test timed out")
             return False
         except Exception as e:
             logger.error(f"Connection test failed: {e}")
             return False
     
-    def get_auth_headers(self) -> Dict[str, str]:
+    def get_auth_headers(self) -> dict[str, str]:
         """Get authentication headers for API requests."""
         token = asyncio.run(self.token_manager.get_valid_token())
         if token:
@@ -245,7 +244,7 @@ class ImprovedAuthenticationManager:
                 await self._session.aclose()
                 self._session = None
     
-    def get_auth_status(self) -> Dict[str, Any]:
+    def get_auth_status(self) -> dict[str, Any]:
         """Get current authentication status."""
         return {
             "authenticated": asyncio.run(self.token_manager.get_valid_token()) is not None,

@@ -1,12 +1,12 @@
 """Comprehensive tests for the improved authentication module."""
 
-import sys
 import os
-import pytest
-import asyncio
-from unittest.mock import MagicMock, AsyncMock, patch, PropertyMock
+import sys
 from datetime import datetime, timedelta
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import httpx
+import pytest
 
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -41,15 +41,15 @@ class TestTokenManager:
         manager = TokenManager()
         
         # No token should be invalid
-        assert manager._is_token_valid() == False
+        assert not manager._is_token_valid()
         
         # Valid token
         manager.set_token("test_token", expires_in=3600)
-        assert manager._is_token_valid() == True
+        assert manager._is_token_valid()
         
         # Expired token
         manager._token_expiry = datetime.now() - timedelta(seconds=1)
-        assert manager._is_token_valid() == False
+        assert not manager._is_token_valid()
     
     @pytest.mark.asyncio
     async def test_get_valid_token(self):
@@ -140,15 +140,15 @@ class TestImprovedAuthenticationManager:
     def test_is_locked_out(self, auth_manager):
         """Test lockout checking."""
         # Not locked out initially
-        assert auth_manager._is_locked_out() == False
+        assert not auth_manager._is_locked_out()
         
         # Set lockout
         auth_manager._lockout_until = datetime.now() + timedelta(minutes=5)
-        assert auth_manager._is_locked_out() == True
+        assert auth_manager._is_locked_out()
         
         # Expired lockout
         auth_manager._lockout_until = datetime.now() - timedelta(seconds=1)
-        assert auth_manager._is_locked_out() == False
+        assert not auth_manager._is_locked_out()
         # Should clear lockout and reduce failed attempts
         assert auth_manager._lockout_until is None
     
@@ -158,7 +158,7 @@ class TestImprovedAuthenticationManager:
         async with auth_manager.get_session() as session:
             assert isinstance(session, httpx.AsyncClient)
             assert session.timeout.connect == 10.0
-            assert session.follow_redirects == False
+            assert not session.follow_redirects
         
         # Session should be reused
         async with auth_manager.get_session() as session2:
@@ -170,7 +170,7 @@ class TestImprovedAuthenticationManager:
         auth_manager._lockout_until = datetime.now() + timedelta(minutes=5)
         
         result = await auth_manager.authenticate()
-        assert result == False
+        assert not result
     
     @pytest.mark.asyncio
     async def test_authenticate_with_valid_token(self, auth_manager):
@@ -178,7 +178,7 @@ class TestImprovedAuthenticationManager:
         auth_manager.token_manager.set_token("valid_token", expires_in=3600)
         
         result = await auth_manager.authenticate(force=False)
-        assert result == True
+        assert result
     
     @pytest.mark.asyncio
     async def test_test_connection(self, auth_manager):
@@ -195,7 +195,7 @@ class TestImprovedAuthenticationManager:
             mock_get_session.return_value = mock_context
             
             result = await auth_manager.test_connection()
-            assert result == True
+            assert result
             mock_session.get.assert_called_once_with("https://test.api.com/health")
     
     def test_get_auth_headers_no_token(self, auth_manager):
@@ -243,20 +243,20 @@ class TestImprovedAuthenticationManager:
         assert "locked_out" in status
         assert "lockout_until" in status
         
-        assert status["authenticated"] == False
+        assert not status["authenticated"]
         assert status["failed_attempts"] == 0
-        assert status["locked_out"] == False
+        assert not status["locked_out"]
         assert status["lockout_until"] is None
         
         # With token
         auth_manager.token_manager.set_token("test_token", expires_in=3600)
         status = auth_manager.get_auth_status()
-        assert status["authenticated"] == True
+        assert status["authenticated"]
         
         # With lockout
         auth_manager._lockout_until = datetime.now() + timedelta(minutes=5)
         status = auth_manager.get_auth_status()
-        assert status["locked_out"] == True
+        assert status["locked_out"]
         assert status["lockout_until"] is not None
 
 
@@ -276,16 +276,20 @@ class TestAuthenticationIntegration:
             auth_manager = ImprovedAuthenticationManager()
             
             # Mock successful authentication
-            with patch.object(auth_manager, '_perform_authentication', return_value=True) as mock_auth:
+            with patch.object(
+                auth_manager,
+                '_perform_authentication',
+                return_value=True,
+            ) as mock_auth:
                 result = await auth_manager.authenticate()
-                assert result == True
+                assert result
                 mock_auth.assert_called_once()
             
             # Should use cached token on second call
             with patch.object(auth_manager, '_perform_authentication') as mock_auth2:
                 auth_manager.token_manager.set_token("cached_token", expires_in=3600)
                 result = await auth_manager.authenticate()
-                assert result == True
+                assert result
                 mock_auth2.assert_not_called()
 
 

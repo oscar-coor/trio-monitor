@@ -1,19 +1,28 @@
 """Admin service for managing monitored services, users, and SLA configurations."""
 
-from datetime import datetime, date, time as dt_time
-from typing import List, Optional
-from sqlalchemy.orm import Session
-from models import (
-    MonitoredService, MonitoredUser, TimeWindow, SLAMetrics,
-    TrioServiceInfo, TrioUserInfo, AdminConfigResponse
-)
-from database import (
-    MonitoredServiceDB, MonitoredUserDB, TimeWindowDB, SLAMetricsDB,
-    get_db
-)
+import logging
+from datetime import date, datetime
+
 from auth import auth_manager
 from config import settings
-import logging
+from database import (
+    ConnectionSettingsDB,
+    MonitoredServiceDB,
+    MonitoredUserDB,
+    SLAMetricsDB,
+    TimeWindowDB,
+)
+from models import (
+    AdminConfigResponse,
+    ConnectionSettings,
+    MonitoredService,
+    MonitoredUser,
+    SLAMetrics,
+    TimeWindow,
+    TrioServiceInfo,
+    TrioUserInfo,
+)
+from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
 
@@ -24,11 +33,11 @@ class AdminService:
     def __init__(self):
         self.auth_manager = auth_manager
     
-    async def get_available_trio_services(self) -> List[TrioServiceInfo]:
+    async def get_available_trio_services(self) -> list[TrioServiceInfo]:
         """Get all available services from Trio API."""
         try:
             session = await self.auth_manager.get_session()
-            response = await session.get(f"/cc/{settings.trio_contact_center_id}/services")
+            response = await session.get(f"/cc/{self.auth_manager.contact_center_id}/services")
             response.raise_for_status()
             
             services_data = response.json()
@@ -59,11 +68,11 @@ class AdminService:
                 TrioServiceInfo(id="svc_004", name="Fakturering", description="Fakturafrågor och betalningar")
             ]
     
-    async def get_available_trio_users(self) -> List[TrioUserInfo]:
+    async def get_available_trio_users(self) -> list[TrioUserInfo]:
         """Get all available users/agents from Trio API."""
         try:
             session = await self.auth_manager.get_session()
-            response = await session.get(f"/cc/{settings.trio_contact_center_id}/agents")
+            response = await session.get(f"/cc/{self.auth_manager.contact_center_id}/agents")
             response.raise_for_status()
             
             users_data = response.json()
@@ -95,7 +104,7 @@ class AdminService:
                 TrioUserInfo(id="usr_004", name="lars.larsson", display_name="Lars Larsson")
             ]
     
-    def get_monitored_services(self, db: Session) -> List[MonitoredService]:
+    def get_monitored_services(self, db: Session) -> list[MonitoredService]:
         """Get all monitored services from database."""
         services_db = db.query(MonitoredServiceDB).all()
         return [self._service_db_to_model(service) for service in services_db]
@@ -116,7 +125,7 @@ class AdminService:
         logger.info(f"Added monitored service: {service.service_name}")
         return self._service_db_to_model(service_db)
     
-    def update_monitored_service(self, db: Session, service_id: int, service: MonitoredService) -> Optional[MonitoredService]:
+    def update_monitored_service(self, db: Session, service_id: int, service: MonitoredService) -> MonitoredService | None:
         """Update an existing monitored service."""
         service_db = db.query(MonitoredServiceDB).filter(MonitoredServiceDB.id == service_id).first()
         if not service_db:
@@ -143,7 +152,7 @@ class AdminService:
         logger.info(f"Removed monitored service ID: {service_id}")
         return True
     
-    def get_monitored_users(self, db: Session) -> List[MonitoredUser]:
+    def get_monitored_users(self, db: Session) -> list[MonitoredUser]:
         """Get all monitored users from database."""
         users_db = db.query(MonitoredUserDB).all()
         return [self._user_db_to_model(user) for user in users_db]
@@ -163,7 +172,7 @@ class AdminService:
         logger.info(f"Added monitored user: {user.user_name}")
         return self._user_db_to_model(user_db)
     
-    def update_monitored_user(self, db: Session, user_id: int, user: MonitoredUser) -> Optional[MonitoredUser]:
+    def update_monitored_user(self, db: Session, user_id: int, user: MonitoredUser) -> MonitoredUser | None:
         """Update an existing monitored user."""
         user_db = db.query(MonitoredUserDB).filter(MonitoredUserDB.id == user_id).first()
         if not user_db:
@@ -189,12 +198,12 @@ class AdminService:
         logger.info(f"Removed monitored user ID: {user_id}")
         return True
     
-    def get_time_windows(self, db: Session) -> List[TimeWindow]:
+    def get_time_windows(self, db: Session) -> list[TimeWindow]:
         """Get all time windows from database."""
         windows_db = db.query(TimeWindowDB).all()
         return [self._time_window_db_to_model(window) for window in windows_db]
     
-    def update_time_windows(self, db: Session, windows: List[TimeWindow]) -> List[TimeWindow]:
+    def update_time_windows(self, db: Session, windows: list[TimeWindow]) -> list[TimeWindow]:
         """Update time windows configuration."""
         # Clear existing windows
         db.query(TimeWindowDB).delete()
@@ -216,8 +225,8 @@ class AdminService:
         logger.info(f"Updated {len(windows)} time windows")
         return updated_windows
     
-    def get_sla_metrics(self, db: Session, service_id: Optional[int] = None, 
-                       date_from: Optional[date] = None, date_to: Optional[date] = None) -> List[SLAMetrics]:
+    def get_sla_metrics(self, db: Session, service_id: int | None = None, 
+                       date_from: date | None = None, date_to: date | None = None) -> list[SLAMetrics]:
         """Get SLA metrics with optional filters."""
         query = db.query(SLAMetricsDB)
         
@@ -239,6 +248,78 @@ class AdminService:
             time_windows=self.get_time_windows(db),
             theme_schedule=[]  # Will be populated by theme service
         )
+
+    # ===== Connection settings =====
+    def get_connection_settings(self, db: Session) -> ConnectionSettings:
+        """Fetch stored Trio connection settings or fallback to env defaults."""
+        cfg = db.query(ConnectionSettingsDB).order_by(ConnectionSettingsDB.id.asc()).first()
+        if cfg:
+            return ConnectionSettings(
+                base_url=cfg.base_url,
+                username=cfg.username,
+                api_token=None,  # never expose token value
+                contact_center_id=cfg.contact_center_id,
+                has_token=bool(cfg.api_token),
+            )
+        # fallback to environment
+        return ConnectionSettings(
+            base_url=settings.trio_api_base_url,
+            username=settings.trio_api_username or None,
+            api_token=None,
+            contact_center_id=settings.trio_contact_center_id,
+            has_token=bool(settings.trio_api_token),
+        )
+
+    def update_connection_settings(self, db: Session, new: ConnectionSettings) -> ConnectionSettings:
+        """Upsert Trio connection settings and apply to auth manager. Password is optional; only update if provided."""
+        cfg = db.query(ConnectionSettingsDB).order_by(ConnectionSettingsDB.id.asc()).first()
+        if not cfg:
+            cfg = ConnectionSettingsDB()
+            db.add(cfg)
+        # Basic validation
+        if not (new.base_url and new.contact_center_id):
+            raise ValueError("base_url och contact_center_id krävs")
+        base = new.base_url.strip()
+        if not (base.startswith("http://") or base.startswith("https://")):
+            raise ValueError("base_url måste börja med http:// eller https://")
+        if "/te/api" not in base:
+            raise ValueError("base_url bör innehålla sökvägen '/te/api'")
+        # Decide if we have valid auth method after update
+        incoming_token = (new.api_token or "").strip()
+        incoming_user = (new.username or "").strip()
+        incoming_pwd = (new.password or "").strip()
+        will_have_token = bool(incoming_token) or bool(cfg.api_token)
+        will_have_userpass = bool(incoming_user and incoming_pwd)
+        if not (will_have_token or will_have_userpass):
+            raise ValueError("Ange API-nyckel eller användarnamn + lösenord")
+
+        cfg.base_url = new.base_url
+        cfg.username = incoming_user
+        if incoming_pwd:
+            cfg.password = incoming_pwd
+        if incoming_token:
+            cfg.api_token = incoming_token
+        cfg.contact_center_id = new.contact_center_id
+        db.commit()
+        # Apply to runtime auth manager
+        self.auth_manager.set_connection_settings(
+            base_url=cfg.base_url,
+            username=cfg.username,
+            password=cfg.password,
+            token=cfg.api_token,
+            contact_center_id=cfg.contact_center_id,
+        )
+        return ConnectionSettings(
+            base_url=cfg.base_url,
+            username=cfg.username or None,
+            api_token=None,
+            contact_center_id=cfg.contact_center_id,
+            has_token=bool(cfg.api_token),
+        )
+
+    async def test_trio_connection(self) -> bool:
+        """Test connectivity/auth using current settings."""
+        return await self.auth_manager.test_connection()
     
     def _service_db_to_model(self, service_db: MonitoredServiceDB) -> MonitoredService:
         """Convert database model to pydantic model."""

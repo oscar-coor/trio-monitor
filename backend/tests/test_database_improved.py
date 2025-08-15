@@ -1,26 +1,18 @@
 """Tests for improved database module."""
 
+import os
+import sys
+from datetime import datetime
+from unittest.mock import MagicMock, patch
+
 import pytest
-from datetime import datetime, timedelta
-from unittest.mock import Mock, MagicMock, patch
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
-import sys
-import os
 
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from database_improved import (
-    ImprovedDatabaseManager, 
-    AgentStateDB, 
-    QueueMetricsDB,
-    ServiceLevelDB,
-    AlertDB,
-    HistoricalDataDB,
-    get_db_context,
-    create_tables
-)
+from database_improved import AgentStateDB, ImprovedDatabaseManager, QueueMetricsDB
 
 
 class TestImprovedDatabaseManager:
@@ -42,7 +34,7 @@ class TestImprovedDatabaseManager:
     def test_database_manager_initialization(self):
         """Test database manager initializes and creates tables."""
         with patch('database_improved.create_tables') as mock_create:
-            manager = ImprovedDatabaseManager()
+            ImprovedDatabaseManager()
             mock_create.assert_called_once()
     
     def test_cache_agent_states_new_agent(self, db_manager, mock_session):
@@ -186,21 +178,31 @@ class TestImprovedDatabaseManager:
         mock_queue.average_wait_time = 12.5
         mock_queue.timestamp = datetime.now()
         
-        mock_session.query.return_value.filter.return_value.all.return_value = [mock_agent]
-        mock_session.query.return_value.filter.return_value.order_by.return_value.limit.return_value.all.return_value = [mock_queue]
+        q = mock_session.query.return_value
+        f = q.filter.return_value
+        f.all.return_value = [mock_agent]
+        ob = f.order_by.return_value
+        lim = ob.limit.return_value
+        lim.all.return_value = [mock_queue]
         
         result = db_manager.get_cached_data(mock_session, max_age_seconds=300)
         
-        assert result is not None
+        assert result
         assert len(result["agents"]) == 1
         assert len(result["queues"]) == 1
-        assert result["is_stale"] == False
+        assert not result["is_stale"]
         assert "cached_at" in result
     
     def test_get_cached_data_no_data(self, db_manager, mock_session):
         """Test retrieving cached data when none exists."""
-        mock_session.query.return_value.filter.return_value.all.return_value = []
-        mock_session.query.return_value.filter.return_value.order_by.return_value.limit.return_value.all.return_value = []
+        q = mock_session.query.return_value
+        f = q.filter.return_value
+        # No agents
+        f.all.return_value = []
+        # No queues
+        ob = f.order_by.return_value
+        lim = ob.limit.return_value
+        lim.all.return_value = []
         
         result = db_manager.get_cached_data(mock_session, max_age_seconds=300)
         
@@ -263,7 +265,9 @@ class TestImprovedDatabaseManager:
     
     def test_cleanup_old_data_error_handling(self, db_manager, mock_session):
         """Test error handling during cleanup."""
-        mock_session.query.return_value.filter.return_value.delete.side_effect = SQLAlchemyError("Delete error")
+        mock_session.query.return_value.filter.return_value.delete.side_effect = SQLAlchemyError(
+            "Delete error"
+        )
         
         with pytest.raises(SQLAlchemyError):
             db_manager.cleanup_old_data(mock_session)
@@ -364,9 +368,9 @@ class TestDatabaseIntegration:
     @pytest.fixture
     def test_db(self):
         """Create a test database."""
+        from database_improved import Base
         from sqlalchemy import create_engine
         from sqlalchemy.orm import sessionmaker
-        from database_improved import Base
         
         # Use in-memory SQLite for tests
         engine = create_engine("sqlite:///:memory:")

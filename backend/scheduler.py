@@ -1,17 +1,15 @@
 """Scheduler module for polling Trio Enterprise API."""
 
-import asyncio
+import logging
 from datetime import datetime
-from typing import Dict, Any, List
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from apscheduler.triggers.interval import IntervalTrigger
-from sqlalchemy.orm import Session
+from typing import Any
 
 from api_client import api_client
-from database import get_db, db_manager
-from models import DashboardData, AlertData, QueueStatus
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.interval import IntervalTrigger
 from config import settings
-import logging
+from database import db_manager, get_db
+from models import AlertData, DashboardData, QueueStatus
 
 logger = logging.getLogger(__name__)
 
@@ -21,8 +19,8 @@ class TrioScheduler:
     
     def __init__(self):
         self.scheduler = AsyncIOScheduler()
-        self.latest_data: Dict[str, Any] = {}
-        self.alerts: List[AlertData] = []
+        self.latest_data: dict[str, Any] = {}
+        self.alerts: list[AlertData] = []
         self.is_running = False
         
     def start(self):
@@ -122,7 +120,13 @@ class TrioScheduler:
                         "queue_depth": queue.queue_depth,
                         "service_level": service_level.service_level_percentage,
                         "total_agents": len(agents),
-                        "available_agents": len([a for a in agents if a.status.value == "available"])
+                        "available_agents": len(
+                            [
+                                a
+                                for a in agents
+                                if a.status.value == "available"
+                            ]
+                        )
                     }
                     db_manager.store_historical_data(db, historical_data)
                 
@@ -140,7 +144,7 @@ class TrioScheduler:
             self.latest_data["system_status"] = "error"
             self.latest_data["last_error"] = str(e)
     
-    def _process_alerts(self, queues, service_level) -> List[AlertData]:
+    def _process_alerts(self, queues, service_level) -> list[AlertData]:
         """Process and generate alerts based on current data."""
         alerts = []
         current_time = datetime.now()
@@ -151,9 +155,12 @@ class TrioScheduler:
                 alert = AlertData(
                     alert_id=f"queue_critical_{queue.queue_id}_{int(current_time.timestamp())}",
                     type="queue_critical",
-                    message=f"KRITISK: {queue.queue_name} har väntetid över {settings.queue_time_limit}s ({queue.current_wait_time}s)",
+                    message=(
+                        f"KRITISK: {queue.queue_name} har väntetid över "
+                        f"{settings.queue_time_limit}s ({queue.current_wait_time}s)"
+                    ),
                     severity="critical",
-                    timestamp=current_time
+                    timestamp=current_time,
                 )
                 alerts.append(alert)
             
@@ -161,9 +168,12 @@ class TrioScheduler:
                 alert = AlertData(
                     alert_id=f"queue_warning_{queue.queue_id}_{int(current_time.timestamp())}",
                     type="queue_warning",
-                    message=f"VARNING: {queue.queue_name} närmar sig gränsen ({queue.current_wait_time}s)",
+                    message=(
+                        f"VARNING: {queue.queue_name} närmar sig gränsen "
+                        f"({queue.current_wait_time}s)"
+                    ),
                     severity="medium",
-                    timestamp=current_time
+                    timestamp=current_time,
                 )
                 alerts.append(alert)
         
@@ -172,9 +182,13 @@ class TrioScheduler:
             alert = AlertData(
                 alert_id=f"service_level_{int(current_time.timestamp())}",
                 type="service_level",
-                message=f"Servicenivå under mål: {service_level.service_level_percentage:.1f}% (mål: {settings.service_level_target}%)",
+                message=(
+                    "Servicenivå under mål: "
+                    f"{service_level.service_level_percentage:.1f}% "
+                    f"(mål: {settings.service_level_target}%)"
+                ),
                 severity="high",
-                timestamp=current_time
+                timestamp=current_time,
             )
             alerts.append(alert)
         
@@ -183,9 +197,13 @@ class TrioScheduler:
             alert = AlertData(
                 alert_id=f"daily_limit_{int(current_time.timestamp())}",
                 type="daily_limit",
-                message=f"KRITISK: Daglig kötidsgräns överskriden ({service_level.total_queue_time}s av {settings.queue_time_limit}s)",
+                message=(
+                    "KRITISK: Daglig kötidsgräns överskriden "
+                    f"({service_level.total_queue_time}s av "
+                    f"{settings.queue_time_limit}s)"
+                ),
                 severity="critical",
-                timestamp=current_time
+                timestamp=current_time,
             )
             alerts.append(alert)
         
@@ -203,11 +221,11 @@ class TrioScheduler:
         except Exception as e:
             logger.error(f"Error cleaning up old data: {e}")
     
-    def get_latest_data(self) -> Dict[str, Any]:
+    def get_latest_data(self) -> dict[str, Any]:
         """Get the latest polled data."""
         return self.latest_data.copy() if self.latest_data else {}
     
-    def get_alerts(self) -> List[AlertData]:
+    def get_alerts(self) -> list[AlertData]:
         """Get current alerts."""
         return self.alerts.copy()
 

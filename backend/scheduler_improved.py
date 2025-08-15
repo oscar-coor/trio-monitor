@@ -1,19 +1,16 @@
 """Improved scheduler module for polling Trio Enterprise API."""
 
 import asyncio
-from datetime import datetime, timedelta
-from typing import Dict, Any, List, Optional
-from contextlib import asynccontextmanager
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from apscheduler.triggers.interval import IntervalTrigger
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
-from sqlalchemy.orm import Session
 import logging
+from datetime import datetime
+from typing import Any
 
 from api_client import api_client
-from database import db_manager, get_db
-from models import DashboardData, AlertData, QueueStatus
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.interval import IntervalTrigger
 from config import settings
+from database import db_manager, get_db
+from models import AlertData, DashboardData
 
 logger = logging.getLogger(__name__)
 
@@ -30,8 +27,8 @@ class ImprovedTrioScheduler:
     
     def __init__(self):
         self.scheduler = AsyncIOScheduler()
-        self.latest_data: Dict[str, Any] = {}
-        self.alerts: List[AlertData] = []
+        self.latest_data: dict[str, Any] = {}
+        self.alerts: list[AlertData] = []
         self.is_running = False
         self.consecutive_failures = 0
         self.max_consecutive_failures = 5
@@ -103,7 +100,7 @@ class ImprovedTrioScheduler:
                 await self._poll_data()
                 self.consecutive_failures = 0  # Reset on success
                 return
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 logger.warning(f"Polling timeout on attempt {attempt + 1}/{MAX_RETRIES}")
                 if attempt < MAX_RETRIES - 1:
                     await asyncio.sleep(RETRY_DELAY * (attempt + 1))
@@ -114,7 +111,10 @@ class ImprovedTrioScheduler:
         
         # All retries failed
         self.consecutive_failures += 1
-        logger.error(f"All polling attempts failed. Consecutive failures: {self.consecutive_failures}")
+        logger.error(
+            f"All polling attempts failed. Consecutive failures: "
+            f"{self.consecutive_failures}"
+        )
         self.latest_data["system_status"] = "degraded"
     
     async def _poll_data(self):
@@ -158,7 +158,7 @@ class ImprovedTrioScheduler:
             
             logger.info(f"Successfully polled: {len(agents)} agents, {len(queues)} queues")
             
-        except asyncio.TimeoutError:
+        except TimeoutError:
             logger.error("API polling timeout exceeded")
             raise
         except Exception as e:
@@ -230,15 +230,15 @@ class ImprovedTrioScheduler:
             if db:
                 try:
                     db.close()
-                except:
+                except Exception:
                     pass
             # Properly close the generator
             try:
                 db_gen.close()
-            except:
+            except Exception:
                 pass
     
-    def _process_alerts(self, queues, service_level) -> List[AlertData]:
+    def _process_alerts(self, queues, service_level) -> list[AlertData]:
         """Process and generate alerts with proper thresholds."""
         alerts = []
         current_time = datetime.now()
@@ -249,7 +249,10 @@ class ImprovedTrioScheduler:
                 alert = AlertData(
                     alert_id=f"queue_critical_{queue.queue_id}_{int(current_time.timestamp())}",
                     type="queue_critical",
-                    message=f"KRITISK: {queue.queue_name} har väntetid över {CRITICAL_WAIT_TIME}s ({queue.current_wait_time}s)",
+                    message=(
+                        f"KRITISK: {queue.queue_name} har väntetid över "
+                        f"{CRITICAL_WAIT_TIME}s ({queue.current_wait_time}s)"
+                    ),
                     severity="critical",
                     timestamp=current_time
                 )
@@ -259,7 +262,10 @@ class ImprovedTrioScheduler:
                 alert = AlertData(
                     alert_id=f"queue_warning_{queue.queue_id}_{int(current_time.timestamp())}",
                     type="queue_warning",
-                    message=f"VARNING: {queue.queue_name} närmar sig gränsen ({queue.current_wait_time}s)",
+                    message=(
+                        f"VARNING: {queue.queue_name} närmar sig gränsen "
+                        f"({queue.current_wait_time}s)"
+                    ),
                     severity="medium",
                     timestamp=current_time
                 )
@@ -270,7 +276,11 @@ class ImprovedTrioScheduler:
             alert = AlertData(
                 alert_id=f"service_level_{int(current_time.timestamp())}",
                 type="service_level",
-                message=f"Servicenivå under mål: {service_level.service_level_percentage:.1f}% (mål: {SERVICE_LEVEL_TARGET}%)",
+                message=(
+                    "Servicenivå under mål: "
+                    f"{service_level.service_level_percentage:.1f}% "
+                    f"(mål: {SERVICE_LEVEL_TARGET}%)"
+                ),
                 severity="high",
                 timestamp=current_time
             )
@@ -281,7 +291,10 @@ class ImprovedTrioScheduler:
             alert = AlertData(
                 alert_id=f"daily_limit_{int(current_time.timestamp())}",
                 type="daily_limit",
-                message=f"KRITISK: Daglig kötidsgräns överskriden ({service_level.total_queue_time}s av {CRITICAL_WAIT_TIME}s)",
+                message=(
+                    "KRITISK: Daglig kötidsgräns överskriden "
+                    f"({service_level.total_queue_time}s av {CRITICAL_WAIT_TIME}s)"
+                ),
                 severity="critical",
                 timestamp=current_time
             )
@@ -336,20 +349,24 @@ class ImprovedTrioScheduler:
         except Exception as e:
             logger.error(f"Health check error: {e}", exc_info=True)
     
-    def get_latest_data(self) -> Dict[str, Any]:
+    def get_latest_data(self) -> dict[str, Any]:
         """Get the latest polled data."""
         return self.latest_data.copy() if self.latest_data else {}
     
-    def get_alerts(self) -> List[AlertData]:
+    def get_alerts(self) -> list[AlertData]:
         """Get current alerts."""
         return self.alerts.copy()
     
-    def get_system_metrics(self) -> Dict[str, Any]:
+    def get_system_metrics(self) -> dict[str, Any]:
         """Get system performance metrics."""
         return {
             "is_running": self.is_running,
             "consecutive_failures": self.consecutive_failures,
-            "circuit_breaker_status": "open" if self.consecutive_failures >= self.max_consecutive_failures else "closed",
+            "circuit_breaker_status": (
+                "open"
+                if self.consecutive_failures >= self.max_consecutive_failures
+                else "closed"
+            ),
             "last_successful_poll": self.latest_data.get("last_updated"),
             "system_status": self.latest_data.get("system_status", "unknown")
         }

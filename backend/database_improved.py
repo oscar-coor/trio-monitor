@@ -1,16 +1,16 @@
 """Improved database module with better session management and async support."""
 
-from datetime import datetime, timedelta
-from typing import List, Optional, Dict, Any, Generator
-from contextlib import contextmanager
-from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, Boolean, Text, Index
-from sqlalchemy.orm import declarative_base
-from sqlalchemy.orm import sessionmaker, Session
-from sqlalchemy.exc import SQLAlchemyError, IntegrityError
-from sqlalchemy.pool import NullPool
 import logging
+from collections.abc import Generator
+from contextlib import contextmanager
+from datetime import datetime, timedelta
+from typing import Any
 
 from config import settings
+from sqlalchemy import Boolean, Column, DateTime, Float, Index, Integer, String, Text, create_engine
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy.orm import Session, declarative_base, sessionmaker
+from sqlalchemy.pool import NullPool
 
 logger = logging.getLogger(__name__)
 
@@ -181,7 +181,7 @@ class ImprovedDatabaseManager:
             logger.error(f"Failed to initialize database: {e}")
             raise
     
-    def cache_agent_states(self, db: Session, agents: List[Dict[str, Any]]) -> None:
+    def cache_agent_states(self, db: Session, agents: list[dict[str, Any]]) -> None:
         """Cache agent states with upsert logic and error handling."""
         try:
             for agent_data in agents:
@@ -218,7 +218,7 @@ class ImprovedDatabaseManager:
             db.rollback()
             raise
     
-    def cache_queue_metrics(self, db: Session, queues: List[Dict[str, Any]]) -> None:
+    def cache_queue_metrics(self, db: Session, queues: list[dict[str, Any]]) -> None:
         """Cache queue metrics with validation."""
         try:
             for queue_data in queues:
@@ -242,7 +242,7 @@ class ImprovedDatabaseManager:
             db.rollback()
             raise
     
-    def get_cached_data(self, db: Session, max_age_seconds: int = 300) -> Optional[Dict[str, Any]]:
+    def get_cached_data(self, db: Session, max_age_seconds: int = 300) -> dict[str, Any] | None:
         """Get cached data with age validation."""
         try:
             cutoff_time = datetime.now() - timedelta(seconds=max_age_seconds)
@@ -271,7 +271,7 @@ class ImprovedDatabaseManager:
             logger.error(f"Error retrieving cached data: {e}")
             return None
     
-    def store_historical_data(self, db: Session, data: Dict[str, Any]) -> None:
+    def store_historical_data(self, db: Session, data: dict[str, Any]) -> None:
         """Store historical data with validation."""
         try:
             # Validate required fields
@@ -313,10 +313,14 @@ class ImprovedDatabaseManager:
             
             # Delete old acknowledged alerts
             week_ago = datetime.now() - timedelta(days=7)
-            deleted_alerts = db.query(AlertDB).filter(
-                AlertDB.acknowledged == True,
-                AlertDB.acknowledged_at < week_ago
-            ).delete()
+            deleted_alerts = (
+                db.query(AlertDB)
+                .filter(
+                    AlertDB.acknowledged,
+                    AlertDB.acknowledged_at < week_ago,
+                )
+                .delete()
+            )
             deleted_count += deleted_alerts
             
             db.commit()
@@ -328,7 +332,7 @@ class ImprovedDatabaseManager:
             db.rollback()
             raise
     
-    def get_queue_statistics(self, db: Session, queue_id: str, hours: int = 24) -> Dict[str, Any]:
+    def get_queue_statistics(self, db: Session, queue_id: str, hours: int = 24) -> dict[str, Any]:
         """Get detailed statistics for a queue."""
         try:
             start_time = datetime.now() - timedelta(hours=hours)
@@ -359,7 +363,7 @@ class ImprovedDatabaseManager:
             logger.error(f"Error getting queue statistics: {e}")
             return {}
     
-    def _agent_to_dict(self, agent: AgentStateDB) -> Dict[str, Any]:
+    def _agent_to_dict(self, agent: AgentStateDB) -> dict[str, Any]:
         """Convert agent DB model to dictionary safely."""
         return {
             "agent_id": agent.agent_id,
@@ -371,7 +375,7 @@ class ImprovedDatabaseManager:
             "last_updated": agent.last_updated.isoformat() if agent.last_updated else None
         }
     
-    def _queue_to_dict(self, queue: QueueMetricsDB) -> Dict[str, Any]:
+    def _queue_to_dict(self, queue: QueueMetricsDB) -> dict[str, Any]:
         """Convert queue DB model to dictionary safely."""
         return {
             "queue_id": queue.queue_id,

@@ -119,6 +119,23 @@ class AdminApiService {
     return this.apiRequest('/api/admin/config');
   }
 
+  // ===== CONNECTION SETTINGS =====
+
+  async getConnectionSettings() {
+    return this.apiRequest('/api/admin/connection-settings');
+  }
+
+  async updateConnectionSettings(settings) {
+    return this.apiRequest('/api/admin/connection-settings', {
+      method: 'PUT',
+      body: JSON.stringify(settings),
+    });
+  }
+
+  async testConnection() {
+    return this.apiRequest('/api/admin/test-connection', { method: 'POST' });
+  }
+
   // ===== THEME MANAGEMENT =====
   
   async getCurrentTheme() {

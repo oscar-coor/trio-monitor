@@ -2,26 +2,25 @@
 
 import logging
 from contextlib import asynccontextmanager
-from typing import List, Dict, Any
-from fastapi import FastAPI, HTTPException, Depends
+from typing import Any
+
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
 # Use improved modules with better error handling and security
 try:
-    from config_improved import settings
     from auth_improved import auth_manager
+    from config_improved import settings
+    from database_improved import get_db
     from scheduler_improved import trio_scheduler
-    from database_improved import get_db, get_db_context, db_manager, HistoricalDataDB
-except ImportError:
+except Exception:
     # Fallback to original modules if improved not available
-    from config import settings
     from auth import auth_manager
+    from config import settings
+    from database import get_db
     from scheduler import trio_scheduler
-    from database import get_db, db_manager, HistoricalDataDB
 
-from api_client import api_client
-from models import DashboardData, AgentState, QueueMetrics, ServiceLevelMetrics, AlertData, HistoricalData
 from admin_api import admin_router, theme_router
 
 # Configure logging
@@ -109,7 +108,7 @@ async def health_check():
     }
 
 
-@app.get("/api/dashboard", response_model=Dict[str, Any])
+@app.get("/api/dashboard", response_model=dict[str, Any])
 async def get_dashboard_data():
     """Get complete dashboard data."""
     try:
@@ -123,7 +122,7 @@ async def get_dashboard_data():
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@app.get("/api/agents", response_model=List[Dict[str, Any]])
+@app.get("/api/agents", response_model=list[dict[str, Any]])
 async def get_agents():
     """Get current agent states."""
     try:
@@ -134,7 +133,7 @@ async def get_agents():
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@app.get("/api/queues", response_model=List[Dict[str, Any]])
+@app.get("/api/queues", response_model=list[dict[str, Any]])
 async def get_queues():
     """Get current queue metrics."""
     try:
@@ -145,7 +144,7 @@ async def get_queues():
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@app.get("/api/service-level", response_model=Dict[str, Any])
+@app.get("/api/service-level", response_model=dict[str, Any])
 async def get_service_level():
     """Get service level metrics."""
     try:
@@ -156,7 +155,7 @@ async def get_service_level():
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@app.get("/api/alerts", response_model=List[Dict[str, Any]])
+@app.get("/api/alerts", response_model=list[dict[str, Any]])
 async def get_alerts():
     """Get current alerts."""
     try:
@@ -224,6 +223,7 @@ async def get_historical_data(queue_id: str, hours: int = 24, db: Session = Depe
     """Get historical data for a specific queue."""
     try:
         from datetime import datetime, timedelta
+
         from database import HistoricalDataDB
         
         start_time = datetime.now() - timedelta(hours=hours)

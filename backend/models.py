@@ -1,8 +1,8 @@
 """Data models for Trio Monitor application."""
 
-from datetime import datetime, date, time
-from typing import Optional, List, Dict, Any
+from datetime import date, datetime, time
 from enum import Enum
+
 from pydantic import BaseModel, Field
 
 
@@ -27,9 +27,9 @@ class AgentState(BaseModel):
     agent_id: str
     name: str
     status: AgentStatus
-    current_call_duration: Optional[int] = None
+    current_call_duration: int | None = None
     calls_handled_today: int = 0
-    average_call_time: Optional[float] = None
+    average_call_time: float | None = None
     last_updated: datetime = Field(default_factory=datetime.now)
 
 
@@ -56,18 +56,18 @@ class ServiceLevelMetrics(BaseModel):
     total_queue_time: int
     peak_wait_time: int
     queue_time_limit_breached: bool
-    last_updated: Optional[datetime] = None
+    last_updated: datetime | None = None
 
 
 
 class DashboardData(BaseModel):
     """Complete dashboard data model."""
-    agents: List[AgentState]
-    queues: List[QueueMetrics]
+    agents: list[AgentState]
+    queues: list[QueueMetrics]
     service_level: ServiceLevelMetrics
     system_status: str = "operational"
     last_updated: datetime = Field(default_factory=datetime.now)
-    alerts: List[str] = []
+    alerts: list[str] = []
 
 
 class AlertData(BaseModel):
@@ -95,45 +95,45 @@ class HistoricalData(BaseModel):
 
 class MonitoredService(BaseModel):
     """Configuration for monitored services/queues."""
-    id: Optional[int] = None
+    id: int | None = None
     trio_service_id: str
     service_name: str
     sla_target_seconds: int = 20
     warning_threshold_seconds: int = 15
     is_active: bool = True
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
 
 
 
 class MonitoredUser(BaseModel):
     """Configuration for monitored users/agents."""
-    id: Optional[int] = None
+    id: int | None = None
     trio_user_id: str
     user_name: str
-    display_name: Optional[str] = None
+    display_name: str | None = None
     is_active: bool = True
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
 
 
 
 class TimeWindow(BaseModel):
     """Configuration for measurement time windows."""
-    id: Optional[int] = None
+    id: int | None = None
     name: str  # "Vardagar" / "Helger"
     start_time: time
     end_time: time
-    weekdays: List[int]  # 1=Monday, 7=Sunday
+    weekdays: list[int]  # 1=Monday, 7=Sunday
     is_active: bool = True
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
 
 
 
 class SLAMetrics(BaseModel):
     """Historical SLA metrics within time windows."""
-    id: Optional[int] = None
+    id: int | None = None
     service_id: int  # Foreign key to MonitoredService
     measurement_date: date
     time_window_id: int  # Foreign key to TimeWindow
@@ -141,8 +141,8 @@ class SLAMetrics(BaseModel):
     total_calls: int
     calls_within_sla: int
     sla_percentage: float
-    peak_wait_time: Optional[int] = None
-    created_at: Optional[datetime] = None
+    peak_wait_time: int | None = None
+    created_at: datetime | None = None
 
 
 
@@ -156,21 +156,21 @@ class ThemeType(str, Enum):
 
 class ThemeSchedule(BaseModel):
     """Configuration for automatic theme switching."""
-    id: Optional[int] = None
+    id: int | None = None
     name: str  # "Dagstema" / "Natttema"
     theme_type: ThemeType
     start_time: time
     end_time: time
-    weekdays: List[int]  # 1=Monday, 7=Sunday
+    weekdays: list[int]  # 1=Monday, 7=Sunday
     is_active: bool = True
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
 
 
 
 class ThemeSettings(BaseModel):
     """Custom theme color settings."""
-    id: Optional[int] = None
+    id: int | None = None
     theme_type: ThemeType
     primary_color: str = "#1976d2"
     background_color: str = "#ffffff"
@@ -182,8 +182,8 @@ class ThemeSettings(BaseModel):
     warning_color: str = "#ff9800"
     error_color: str = "#f44336"
     is_default: bool = False
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
     
     class Config:
         json_encoders = {
@@ -197,7 +197,7 @@ class TrioServiceInfo(BaseModel):
     """Information about available Trio services."""
     id: str
     name: str
-    description: Optional[str] = None
+    description: str | None = None
     is_active: bool = True
 
 
@@ -205,22 +205,33 @@ class TrioUserInfo(BaseModel):
     """Information about available Trio users/agents."""
     id: str
     name: str
-    display_name: Optional[str] = None
-    email: Optional[str] = None
+    display_name: str | None = None
+    email: str | None = None
     is_active: bool = True
 
 
 class AdminConfigResponse(BaseModel):
     """Response model for admin configuration data."""
-    monitored_services: List[MonitoredService]
-    monitored_users: List[MonitoredUser]
-    time_windows: List[TimeWindow]
-    theme_schedule: List[ThemeSchedule]
+    monitored_services: list[MonitoredService]
+    monitored_users: list[MonitoredUser]
+    time_windows: list[TimeWindow]
+    theme_schedule: list[ThemeSchedule]
     
 
 class ThemeStatusResponse(BaseModel):
     """Current theme status response."""
     current_theme: ThemeType
     auto_theme_enabled: bool
-    next_switch_time: Optional[datetime] = None
+    next_switch_time: datetime | None = None
     manual_override: bool = False
+
+
+# Connection settings (admin-manageable)
+class ConnectionSettings(BaseModel):
+    """Configuration for Trio server connection and credentials."""
+    base_url: str
+    username: str | None = None
+    password: str | None = None  # write-only; do not log
+    api_token: str | None = None
+    contact_center_id: str = "1"
+    has_token: bool = False  # indicates a stored token exists server-side

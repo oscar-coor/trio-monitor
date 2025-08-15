@@ -1,17 +1,21 @@
 """Tests for improved scheduler module."""
 
-import pytest
-import asyncio
-from datetime import datetime, timedelta
-from unittest.mock import Mock, MagicMock, patch, AsyncMock
-import sys
 import os
+import sys
+from datetime import datetime
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from scheduler_improved import ImprovedTrioScheduler, MAX_RETRIES, RETRY_DELAY
-from models import QueueMetrics, ServiceLevelMetrics, QueueStatus, AlertData
+from models import QueueMetrics, QueueStatus, ServiceLevelMetrics  # noqa: E402
+from scheduler_improved import (  # noqa: E402
+    MAX_RETRIES,
+    RETRY_DELAY,
+    ImprovedTrioScheduler,
+)
 
 
 class TestImprovedTrioScheduler:
@@ -45,7 +49,7 @@ class TestImprovedTrioScheduler:
         """Test scheduler initializes correctly."""
         assert scheduler.latest_data == {}
         assert scheduler.alerts == []
-        assert scheduler.is_running == False
+        assert not scheduler.is_running
         assert scheduler.consecutive_failures == 0
         assert scheduler.max_consecutive_failures == 5
     
@@ -53,11 +57,11 @@ class TestImprovedTrioScheduler:
         """Test scheduler can start and stop."""
         # Start scheduler
         scheduler.start()
-        assert scheduler.is_running == True
+        assert scheduler.is_running
         
         # Stop scheduler
         scheduler.stop()
-        assert scheduler.is_running == False
+        assert not scheduler.is_running
     
     @pytest.mark.asyncio
     async def test_circuit_breaker_activation(self, scheduler):
@@ -88,7 +92,7 @@ class TestImprovedTrioScheduler:
     async def test_retry_logic_with_timeout(self, scheduler):
         """Test retry logic handles timeouts correctly."""
         with patch('scheduler_improved.api_client.get_agent_states', 
-                   side_effect=asyncio.TimeoutError()):
+                   side_effect=TimeoutError()):
             await scheduler._poll_data_with_retry()
             
             # Should increment consecutive failures
@@ -279,7 +283,7 @@ class TestImprovedTrioScheduler:
         
         metrics = scheduler.get_system_metrics()
         
-        assert metrics["is_running"] == True
+        assert metrics["is_running"]
         assert metrics["consecutive_failures"] == 2
         assert metrics["circuit_breaker_status"] == "closed"
         assert metrics["system_status"] == "operational"
@@ -314,7 +318,7 @@ class TestImprovedTrioScheduler:
             mock_session = MagicMock()
             mock_db.return_value.__next__.return_value = mock_session
             
-            with patch('scheduler_improved.db_manager') as mock_db_manager:
+            with patch('scheduler_improved.db_manager'):
                 await scheduler._cache_data_safely(
                     agents, queues, service_level, dashboard_data
                 )

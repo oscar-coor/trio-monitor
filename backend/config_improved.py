@@ -1,10 +1,10 @@
 """Improved configuration module with validation and security."""
 
-import os
-from typing import Optional, List
-from pydantic import BaseSettings, Field, validator, SecretStr
-from pathlib import Path
 import logging
+import os
+from pathlib import Path
+
+from pydantic import BaseSettings, Field, SecretStr, validator
 
 logger = logging.getLogger(__name__)
 
@@ -17,15 +17,15 @@ class ImprovedSettings(BaseSettings):
         default="https://api.trio-enterprise.com",
         description="Base URL for Trio Enterprise API"
     )
-    trio_username: Optional[str] = Field(
+    trio_username: str | None = Field(
         default=None,
         description="Username for API authentication"
     )
-    trio_password: Optional[SecretStr] = Field(
+    trio_password: SecretStr | None = Field(
         default=None,
         description="Password for API authentication (stored securely)"
     )
-    trio_token: Optional[SecretStr] = Field(
+    trio_token: SecretStr | None = Field(
         default=None,
         description="API token for authentication"
     )
@@ -83,7 +83,7 @@ class ImprovedSettings(BaseSettings):
         default="http://localhost:3000",
         description="Frontend URL for CORS configuration"
     )
-    allowed_origins: List[str] = Field(
+    allowed_origins: list[str] = Field(
         default_factory=lambda: ["http://localhost:3000"],
         description="Allowed CORS origins"
     )
@@ -164,9 +164,13 @@ class ImprovedSettings(BaseSettings):
         """Validate that secrets are not default values in production."""
         if v and not os.getenv("DEBUG", "").lower() == "true":
             default_values = ["change-this", "default", "example", "test"]
-            value_str = v.get_secret_value() if hasattr(v, 'get_secret_value') else str(v)
+            value_str = (
+                v.get_secret_value() if hasattr(v, 'get_secret_value') else str(v)
+            )
             if any(default in value_str.lower() for default in default_values):
-                logger.warning(f"⚠️ {field.name} contains default value - please change for production!")
+                logger.warning(
+                    f"⚠️ {field.name} contains default value - please change for production!"
+                )
         return v
     
     @validator("trio_username")
@@ -180,7 +184,12 @@ class ImprovedSettings(BaseSettings):
     def validate_thresholds(cls, v, values):
         """Validate that warning threshold is less than critical limit."""
         if "queue_time_limit" in values and v >= values["queue_time_limit"]:
-            raise ValueError(f"Warning threshold ({v}) must be less than queue time limit ({values['queue_time_limit']})")
+            raise ValueError(
+                (
+                    "Warning threshold (" f"{v}" ") must be less than queue time limit ("
+                    f"{values['queue_time_limit']})"
+                )
+            )
         return v
     
     @validator("allowed_origins", pre=True)

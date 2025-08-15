@@ -1,9 +1,9 @@
 """Configuration module for Trio Monitor backend."""
 
 import os
-from typing import Optional
-from pydantic_settings import BaseSettings
+
 from dotenv import load_dotenv
+from pydantic_settings import BaseSettings
 
 load_dotenv()
 
@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     trio_api_base_url: str = os.getenv("TRIO_API_BASE_URL", "")
     trio_api_username: str = os.getenv("TRIO_API_USERNAME", "")
     trio_api_password: str = os.getenv("TRIO_API_PASSWORD", "")
-    trio_api_token: Optional[str] = os.getenv("TRIO_API_TOKEN")
+    trio_api_token: str | None = os.getenv("TRIO_API_TOKEN")
     trio_contact_center_id: str = os.getenv("TRIO_CONTACT_CENTER_ID", "1")
     
     # Database Configuration

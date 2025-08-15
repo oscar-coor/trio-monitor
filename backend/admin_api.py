@@ -1,18 +1,27 @@
 """Admin API endpoints for managing monitored services, users, and configuration."""
 
-from datetime import date, time
-from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
-from models import (
-    MonitoredService, MonitoredUser, TimeWindow, SLAMetrics,
-    TrioServiceInfo, TrioUserInfo, AdminConfigResponse,
-    ThemeSchedule, ThemeSettings, ThemeType, ThemeStatusResponse
-)
-from database import get_db
-from admin_service import admin_service
-from theme_service import theme_service
 import logging
+from datetime import date
+
+from admin_service import admin_service
+from database import get_db
+from fastapi import APIRouter, Depends, HTTPException, status
+from models import (
+    AdminConfigResponse,
+    ConnectionSettings,
+    MonitoredService,
+    MonitoredUser,
+    SLAMetrics,
+    ThemeSchedule,
+    ThemeSettings,
+    ThemeStatusResponse,
+    ThemeType,
+    TimeWindow,
+    TrioServiceInfo,
+    TrioUserInfo,
+)
+from sqlalchemy.orm import Session
+from theme_service import theme_service
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +32,7 @@ theme_router = APIRouter(prefix="/api/theme", tags=["theme"])
 
 # ===== ADMIN CONFIGURATION ENDPOINTS =====
 
-@admin_router.get("/services", response_model=List[TrioServiceInfo])
+@admin_router.get("/services", response_model=list[TrioServiceInfo])
 async def get_available_services():
     """Get all available services from Trio API."""
     try:
@@ -36,7 +45,7 @@ async def get_available_services():
         )
 
 
-@admin_router.get("/monitored-services", response_model=List[MonitoredService])
+@admin_router.get("/monitored-services", response_model=list[MonitoredService])
 def get_monitored_services(db: Session = Depends(get_db)):
     """Get all monitored services."""
     return admin_service.get_monitored_services(db)
@@ -83,7 +92,7 @@ def remove_monitored_service(service_id: int, db: Session = Depends(get_db)):
     return {"message": "Service removed from monitoring"}
 
 
-@admin_router.get("/users", response_model=List[TrioUserInfo])
+@admin_router.get("/users", response_model=list[TrioUserInfo])
 async def get_available_users():
     """Get all available users/agents from Trio API."""
     try:
@@ -96,7 +105,7 @@ async def get_available_users():
         )
 
 
-@admin_router.get("/monitored-users", response_model=List[MonitoredUser])
+@admin_router.get("/monitored-users", response_model=list[MonitoredUser])
 def get_monitored_users(db: Session = Depends(get_db)):
     """Get all monitored users."""
     return admin_service.get_monitored_users(db)
@@ -143,14 +152,14 @@ def remove_monitored_user(user_id: int, db: Session = Depends(get_db)):
     return {"message": "User removed from monitoring"}
 
 
-@admin_router.get("/time-windows", response_model=List[TimeWindow])
+@admin_router.get("/time-windows", response_model=list[TimeWindow])
 def get_time_windows(db: Session = Depends(get_db)):
     """Get all time windows configuration."""
     return admin_service.get_time_windows(db)
 
 
-@admin_router.put("/time-windows", response_model=List[TimeWindow])
-def update_time_windows(windows: List[TimeWindow], db: Session = Depends(get_db)):
+@admin_router.put("/time-windows", response_model=list[TimeWindow])
+def update_time_windows(windows: list[TimeWindow], db: Session = Depends(get_db)):
     """Update time windows configuration."""
     try:
         return admin_service.update_time_windows(db, windows)
@@ -162,11 +171,11 @@ def update_time_windows(windows: List[TimeWindow], db: Session = Depends(get_db)
         )
 
 
-@admin_router.get("/sla-metrics", response_model=List[SLAMetrics])
+@admin_router.get("/sla-metrics", response_model=list[SLAMetrics])
 def get_sla_metrics(
-    service_id: Optional[int] = None,
-    date_from: Optional[date] = None,
-    date_to: Optional[date] = None,
+    service_id: int | None = None,
+    date_from: date | None = None,
+    date_to: date | None = None,
     db: Session = Depends(get_db)
 ):
     """Get SLA metrics with optional filters."""
@@ -180,6 +189,39 @@ def get_admin_config(db: Session = Depends(get_db)):
     # Add theme schedule from theme service
     config.theme_schedule = theme_service.get_theme_schedules(db)
     return config
+
+
+# ===== CONNECTION SETTINGS ENDPOINTS =====
+
+@admin_router.get("/connection-settings", response_model=ConnectionSettings)
+def get_connection_settings(db: Session = Depends(get_db)):
+    """Return Trio connection settings (masking password/token in model by design)."""
+    return admin_service.get_connection_settings(db)
+
+
+@admin_router.put("/connection-settings", response_model=ConnectionSettings)
+def update_connection_settings(settings_in: ConnectionSettings, db: Session = Depends(get_db)):
+    """Update Trio connection settings. Password is optional; only updated if provided."""
+    try:
+        return admin_service.update_connection_settings(db, settings_in)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except Exception as e:
+        logger.error(f"Failed to update connection settings: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Failed to update connection settings"
+        )
+
+
+@admin_router.post("/test-connection")
+async def test_connection():
+    """Test connectivity/authentication to Trio API using current settings."""
+    ok = await admin_service.test_trio_connection()
+    return {"ok": bool(ok)}
 
 
 # ===== THEME CONFIGURATION ENDPOINTS =====
@@ -210,14 +252,14 @@ def clear_manual_override():
     return {"message": "Manual theme override cleared"}
 
 
-@admin_router.get("/theme-schedule", response_model=List[ThemeSchedule])
+@admin_router.get("/theme-schedule", response_model=list[ThemeSchedule])
 def get_theme_schedules(db: Session = Depends(get_db)):
     """Get all theme schedules."""
     return theme_service.get_theme_schedules(db)
 
 
-@admin_router.put("/theme-schedule", response_model=List[ThemeSchedule])
-def update_theme_schedules(schedules: List[ThemeSchedule], db: Session = Depends(get_db)):
+@admin_router.put("/theme-schedule", response_model=list[ThemeSchedule])
+def update_theme_schedules(schedules: list[ThemeSchedule], db: Session = Depends(get_db)):
     """Update theme schedules configuration."""
     try:
         return theme_service.update_theme_schedules(db, schedules)
@@ -229,9 +271,9 @@ def update_theme_schedules(schedules: List[ThemeSchedule], db: Session = Depends
         )
 
 
-@admin_router.get("/theme-settings", response_model=List[ThemeSettings])
+@admin_router.get("/theme-settings", response_model=list[ThemeSettings])
 def get_theme_settings(
-    theme_type: Optional[ThemeType] = None, 
+    theme_type: ThemeType | None = None, 
     db: Session = Depends(get_db)
 ):
     """Get theme settings, optionally filtered by theme type."""

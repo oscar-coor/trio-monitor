@@ -2,15 +2,39 @@
  * Admin Layout Component - Main layout for administrative interface
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import ServiceConfiguration from './ServiceConfiguration';
 import UserConfiguration from './UserConfiguration';
+import ConnectionSettings from './ConnectionSettings';
 import './AdminLayout.css';
+import { adminApi } from '../../services/adminApi';
 
 const AdminLayout = ({ children, onTabChange }) => {
   const [activeTab, setActiveTab] = useState('services');
 
+  const [connValid, setConnValid] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const cfg = await adminApi.getConnectionSettings();
+        const baseOk = Boolean((cfg.base_url || '').trim());
+        const ccOk = Boolean((cfg.contact_center_id || '').trim());
+        const hasToken = Boolean(cfg.has_token);
+        const hasUser = Boolean((cfg.username || '').trim());
+        const valid = baseOk && ccOk && (hasToken || hasUser);
+        if (!cancelled) setConnValid(valid);
+      } catch {
+        if (!cancelled) setConnValid(false);
+      }
+    };
+    load();
+    return () => { cancelled = true; };
+  }, []);
+
   const tabs = [
+    { id: 'connection', label: 'Anslutning', icon: '🔗' },
     { id: 'services', label: 'Tjänster & Köer', icon: '📋' },
     { id: 'users', label: 'Användare', icon: '👥' },
     { id: 'timeSettings', label: 'Tidsinställningar', icon: '⏰' },
@@ -20,6 +44,8 @@ const AdminLayout = ({ children, onTabChange }) => {
 
   const renderTabContent = () => {
     switch (activeTab) {
+      case 'connection':
+        return <ConnectionSettings />;
       case 'services':
         return <ServiceConfiguration />;
       case 'users':
@@ -69,16 +95,13 @@ const AdminLayout = ({ children, onTabChange }) => {
           {tabs.map(tab => (
             <button
               key={tab.id}
-              className={`nav-tab ${activeTab === tab.id ? 'active' : ''}`}
-              onClick={() => {
-                setActiveTab(tab.id);
-                if (onTabChange) {
-                  onTabChange(tab.id);
-                }
-              }}
+              className={`tab-button ${activeTab === tab.id ? 'active' : ''}`}
+              onClick={() => handleTabChange(tab.id)}
             >
-              <span className="tab-icon">{tab.icon}</span>
-              <span className="tab-label">{tab.label}</span>
+              <span className="tab-icon">{tab.icon}</span> {tab.label}
+              {tab.id === 'connection' && !connValid && (
+                <span title="Konfiguration krävs" style={{ marginLeft: 6, width: 8, height: 8, background: '#c62828', borderRadius: '50%', display: 'inline-block' }} />
+              )}
             </button>
           ))}
         </div>

@@ -1,10 +1,10 @@
 """Authentication module for Trio Enterprise API."""
 
-import httpx
-from typing import Optional, Dict, Any
-from datetime import datetime, timedelta
-from config import settings
 import logging
+from datetime import datetime, timedelta
+
+import httpx
+from config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -17,9 +17,10 @@ class TrioAuthManager:
         self.username = settings.trio_api_username
         self.password = settings.trio_api_password
         self.token = settings.trio_api_token
-        self._auth_token: Optional[str] = None
-        self._token_expires: Optional[datetime] = None
-        self._session: Optional[httpx.AsyncClient] = None
+        self.contact_center_id = settings.trio_contact_center_id
+        self._auth_token: str | None = None
+        self._token_expires: datetime | None = None
+        self._session: httpx.AsyncClient | None = None
     
     async def get_session(self) -> httpx.AsyncClient:
         """Get authenticated HTTP session."""
@@ -41,6 +42,29 @@ class TrioAuthManager:
             self._session.headers["Authorization"] = f"Bearer {self._auth_token}"
         
         return self._session
+
+    def set_connection_settings(
+        self,
+        *,
+        base_url: str,
+        username: str | None,
+        password: str | None,
+        token: str | None,
+        contact_center_id: str,
+    ) -> None:
+        """Update connection parameters at runtime and reset session/token."""
+        self.base_url = base_url
+        self.username = username or ""
+        self.password = password or ""
+        self.token = token
+        self.contact_center_id = contact_center_id
+        # Invalidate session and tokens so next call reauthenticates
+        self._auth_token = None
+        self._token_expires = None
+        # Drop existing client; a new one will be created lazily on next use
+        self._session = None
+
+    
     
     async def _ensure_authenticated(self) -> None:
         """Ensure we have a valid authentication token."""

@@ -1,13 +1,11 @@
 """API client for Trio Enterprise API integration."""
 
-import asyncio
-import httpx
-from typing import List, Dict, Any, Optional
+import logging
 from datetime import datetime
-from models import AgentState, QueueMetrics, QueueStatus, AgentStatus, ServiceLevelMetrics
+
 from auth import auth_manager
 from config import settings
-import logging
+from models import AgentState, AgentStatus, QueueMetrics, QueueStatus, ServiceLevelMetrics
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +34,7 @@ class TrioAPIClient:
         response.raise_for_status()
         return response.json()
 
-    async def get_agent_states(self) -> List[AgentState]:
+    async def get_agent_states(self) -> list[AgentState]:
         """Fetch current agent states from Trio API."""
         try:
             endpoint = f"/cc/{settings.trio_contact_center_id}/agents/state"
@@ -44,19 +42,39 @@ class TrioAPIClient:
             agents = []
             
             # Handle both direct array and nested structure
-            agent_list = agents_data if isinstance(agents_data, list) else agents_data.get("data", agents_data.get("agents", []))
+            agent_list = (
+                agents_data
+                if isinstance(agents_data, list)
+                else agents_data.get("data", agents_data.get("agents", []))
+            )
             
             # Process agent data according to Trio API structure
             for agent_data in agent_list:
                 # More robust field mapping based on actual Trio API responses
                 agent = AgentState(
-                    agent_id=str(agent_data.get("id", agent_data.get("agentId", ""))),
-                    name=agent_data.get("name", agent_data.get("displayName", agent_data.get("firstName", "Unknown"))),
-                    status=self._map_agent_status(agent_data.get("status", agent_data.get("state", "unavailable"))),
-                    current_call_duration=agent_data.get("currentCallDuration", agent_data.get("current_call_duration")),
-                    calls_handled_today=agent_data.get("callsHandledToday", agent_data.get("calls_handled_today", 0)),
-                    average_call_time=agent_data.get("averageCallTime", agent_data.get("average_call_time")),
-                    last_updated=datetime.now()
+                    agent_id=str(
+                        agent_data.get("id", agent_data.get("agentId", ""))
+                    ),
+                    name=agent_data.get(
+                        "name",
+                        agent_data.get(
+                            "displayName",
+                            agent_data.get("firstName", "Unknown"),
+                        ),
+                    ),
+                    status=self._map_agent_status(
+                        agent_data.get("status", agent_data.get("state", "unavailable"))
+                    ),
+                    current_call_duration=agent_data.get(
+                        "currentCallDuration", agent_data.get("current_call_duration")
+                    ),
+                    calls_handled_today=agent_data.get(
+                        "callsHandledToday", agent_data.get("calls_handled_today", 0)
+                    ),
+                    average_call_time=agent_data.get(
+                        "averageCallTime", agent_data.get("average_call_time")
+                    ),
+                    last_updated=datetime.now(),
                 )
                 agents.append(agent)
             
@@ -67,7 +85,7 @@ class TrioAPIClient:
             logger.error(f"Failed to fetch agent states: {e}")
             return self._get_mock_agent_states()  # Fallback for development
     
-    async def get_queue_metrics(self) -> List[QueueMetrics]:
+    async def get_queue_metrics(self) -> list[QueueMetrics]:
         """Fetch current queue metrics from Trio API."""
         try:
             endpoint = f"/cc/{settings.trio_contact_center_id}/services/state"
@@ -75,26 +93,51 @@ class TrioAPIClient:
             queues = []
             
             # Handle both direct array and nested structure
-            service_list = queues_data if isinstance(queues_data, list) else queues_data.get("data", queues_data.get("services", []))
+            service_list = (
+                queues_data
+                if isinstance(queues_data, list)
+                else queues_data.get("data", queues_data.get("services", []))
+            )
             
             # Process queue data according to Trio API structure
             for queue_data in service_list:
                 # More robust field mapping for different response formats
-                wait_time = queue_data.get("currentWaitTime", queue_data.get("current_wait_time", 
-                           queue_data.get("waitTime", 0)))
+                wait_time = queue_data.get(
+                    "currentWaitTime",
+                    queue_data.get("current_wait_time", queue_data.get("waitTime", 0)),
+                )
                 
                 queue = QueueMetrics(
-                    queue_id=str(queue_data.get("id", queue_data.get("serviceId", ""))),
-                    queue_name=queue_data.get("name", queue_data.get("serviceName", "Unknown Queue")),
+                    queue_id=str(
+                        queue_data.get("id", queue_data.get("serviceId", ""))
+                    ),
+                    queue_name=queue_data.get(
+                        "name", queue_data.get("serviceName", "Unknown Queue")
+                    ),
                     current_wait_time=int(wait_time) if wait_time is not None else 0,
-                    queue_depth=queue_data.get("queueDepth", queue_data.get("queue_depth", 
-                               queue_data.get("queueLength", 0))),
-                    status=self._determine_queue_status(int(wait_time) if wait_time is not None else 0),
-                    calls_waiting=queue_data.get("callsWaiting", queue_data.get("calls_waiting", 
-                                 queue_data.get("queueSize", 0))),
-                    longest_wait_time=queue_data.get("longestWaitTime", queue_data.get("longest_wait_time", 0)),
-                    average_wait_time=float(queue_data.get("averageWaitTime", queue_data.get("average_wait_time", 0.0))),
-                    last_updated=datetime.now()
+                    queue_depth=queue_data.get(
+                        "queueDepth",
+                        queue_data.get("queue_depth", queue_data.get("queueLength", 0)),
+                    ),
+                    status=self._determine_queue_status(
+                        int(wait_time) if wait_time is not None else 0
+                    ),
+                    calls_waiting=queue_data.get(
+                        "callsWaiting",
+                        queue_data.get(
+                            "calls_waiting", queue_data.get("queueSize", 0)
+                        ),
+                    ),
+                    longest_wait_time=queue_data.get(
+                        "longestWaitTime", queue_data.get("longest_wait_time", 0)
+                    ),
+                    average_wait_time=float(
+                        queue_data.get(
+                            "averageWaitTime",
+                            queue_data.get("average_wait_time", 0.0),
+                        )
+                    ),
+                    last_updated=datetime.now(),
                 )
                 queues.append(queue)
             
@@ -120,9 +163,17 @@ class TrioAPIClient:
             total_calls = len(cases)
             
             # Count calls answered within target time (20 seconds)
-            calls_within_target = sum(1 for case in cases if case.get("wait_time", 0) <= self.queue_time_limit)
+            calls_within_target = sum(
+                1
+                for case in cases
+                if case.get("wait_time", 0) <= self.queue_time_limit
+            )
             
-            service_level_percentage = (calls_within_target / total_calls * 100) if total_calls > 0 else 0.0
+            service_level_percentage = (
+                (calls_within_target / total_calls * 100)
+                if total_calls > 0
+                else 0.0
+            )
             
             # Calculate average wait time
             wait_times = [case.get("wait_time", 0) for case in cases]
@@ -178,7 +229,7 @@ class TrioAPIClient:
         else:
             return QueueStatus.GOOD
     
-    def _get_mock_agent_states(self) -> List[AgentState]:
+    def _get_mock_agent_states(self) -> list[AgentState]:
         """Get mock agent states for development/testing."""
         return [
             AgentState(
@@ -212,7 +263,7 @@ class TrioAPIClient:
             )
         ]
     
-    def _get_mock_queue_metrics(self) -> List[QueueMetrics]:
+    def _get_mock_queue_metrics(self) -> list[QueueMetrics]:
         """Get mock queue metrics for development/testing."""
         import random
         

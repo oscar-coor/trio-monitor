@@ -1,11 +1,23 @@
 """Database module for Trio Monitor application."""
 
 from datetime import datetime, timedelta
-from typing import List, Optional
-from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, Boolean, Text, Date, Time, JSON, ForeignKey
-from sqlalchemy.orm import declarative_base
-from sqlalchemy.orm import sessionmaker, Session, relationship
+
 from config import settings
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    Column,
+    Date,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    Time,
+    create_engine,
+)
+from sqlalchemy.orm import Session, declarative_base, relationship, sessionmaker
 
 Base = declarative_base()
 
@@ -97,6 +109,19 @@ class MonitoredServiceDB(Base):
     created_at = Column(DateTime, default=datetime.now)
     updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
 
+
+# Admin connection settings
+class ConnectionSettingsDB(Base):
+    """Connection settings for Trio API (stored server-side)."""
+    __tablename__ = "connection_settings"
+
+    id = Column(Integer, primary_key=True, index=True)
+    base_url = Column(String)
+    username = Column(String)
+    password = Column(String)  # NOTE: store securely; avoid logging
+    api_token = Column(String, nullable=True)
+    contact_center_id = Column(String, default="1")
+    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
 
 class MonitoredUserDB(Base):
     """Monitored users database model."""
@@ -205,7 +230,7 @@ class DatabaseManager:
     def __init__(self):
         create_tables()
     
-    def cache_agent_states(self, db: Session, agents: List[dict]) -> None:
+    def cache_agent_states(self, db: Session, agents: list[dict]) -> None:
         """Cache agent states in database."""
         for agent_data in agents:
             agent = db.query(AgentStateDB).filter(
@@ -224,7 +249,7 @@ class DatabaseManager:
         
         db.commit()
     
-    def cache_queue_metrics(self, db: Session, queues: List[dict]) -> None:
+    def cache_queue_metrics(self, db: Session, queues: list[dict]) -> None:
         """Cache queue metrics in database."""
         for queue_data in queues:
             queue_metric = QueueMetricsDB(**queue_data)
@@ -232,7 +257,7 @@ class DatabaseManager:
         
         db.commit()
     
-    def get_cached_data(self, db: Session, max_age_seconds: int = 300) -> Optional[dict]:
+    def get_cached_data(self, db: Session, max_age_seconds: int = 300) -> dict | None:
         """Get cached data if within max age."""
         cutoff_time = datetime.now() - timedelta(seconds=max_age_seconds)
         
