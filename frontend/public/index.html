@@ -2,15 +2,15 @@
 <html lang="sv">
   <head>
     <meta charset="utf-8" />
-    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+    <!-- Inline SVG favicon to avoid proxying missing /favicon.ico -->
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%230066cc'/%3E%3Ctext x='50' y='62' font-size='60' text-anchor='middle' fill='white' font-family='Arial, Helvetica, sans-serif'%3ET%3C/text%3E%3C/svg%3E" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#000000" />
     <meta
       name="description"
       content="Trio Monitor - Realtidsövervakning av kötider för Trio Enterprise API"
     />
-    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
-    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    <!-- Removed apple-touch-icon and manifest to avoid 404s during dev when files are absent -->
     
     <!-- Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
