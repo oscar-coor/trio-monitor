@@ -17,7 +17,18 @@ const ServiceConfiguration = () => {
   const [themeSettings, setThemeSettings] = useState([]); // list of ThemeSettings for both LIGHT/DARK
   const [themeStatus, setThemeStatus] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState(null); // legacy, will be mirrored to warnings panel
+  const [warnings, setWarnings] = useState([]);
+
+  const addWarning = (type, message) => {
+    const entry = {
+      id: Date.now() + Math.random(),
+      type, // 'info' | 'warning' | 'error'
+      message,
+      time: new Date().toLocaleTimeString(),
+    };
+    setWarnings((prev) => [...prev, entry]);
+  };
   const [showAddService, setShowAddService] = useState(false);
   const [editingService, setEditingService] = useState(null);
 
@@ -58,7 +69,8 @@ const ServiceConfiguration = () => {
       setThemeSettings(tSettings);
       setThemeStatus(tStatus);
     } catch (err) {
-      setError('Kunde inte ladda tjänstedata: ' + err.message);
+      setError(null);
+      addWarning('error', 'Kunde inte ladda administrationsdata: ' + err.message);
     } finally {
       setLoading(false);
     }
@@ -99,7 +111,8 @@ const ServiceConfiguration = () => {
       setEditingService(null);
       loadData();
     } catch (err) {
-      setError('Kunde inte spara tjänst: ' + err.message);
+      setError(null);
+      addWarning('error', 'Kunde inte spara tjänst: ' + err.message);
     }
   };
 
@@ -109,7 +122,8 @@ const ServiceConfiguration = () => {
         await adminApi.removeMonitoredService(serviceId);
         loadData();
       } catch (err) {
-        setError('Kunde inte ta bort tjänst: ' + err.message);
+        setError(null);
+        addWarning('error', 'Kunde inte ta bort tjänst: ' + err.message);
       }
     }
   };
@@ -122,7 +136,8 @@ const ServiceConfiguration = () => {
       });
       loadData();
     } catch (err) {
-      setError('Kunde inte uppdatera tjänst: ' + err.message);
+      setError(null);
+      addWarning('error', 'Kunde inte uppdatera tjänst: ' + err.message);
     }
   };
 
@@ -150,7 +165,8 @@ const ServiceConfiguration = () => {
       const saved = await adminApi.updateConnectionSettings(toSave);
       setConnectionSettings(saved);
     } catch (err) {
-      setError('Kunde inte spara anslutningsinställningar: ' + err.message);
+      setError(null);
+      addWarning('error', 'Kunde inte spara anslutningsinställningar: ' + err.message);
     } finally {
       setConnSaving(false);
     }
@@ -159,9 +175,9 @@ const ServiceConfiguration = () => {
     setConnTesting(true);
     try {
       const res = await adminApi.testConnection();
-      alert(res.ok ? 'Anslutningen lyckades' : 'Anslutningen misslyckades');
+      addWarning(res.ok ? 'info' : 'warning', res.ok ? 'Anslutningstest lyckades' : 'Anslutningstest misslyckades');
     } catch (err) {
-      alert('Test misslyckades: ' + err.message);
+      addWarning('error', 'Anslutningstest misslyckades: ' + err.message);
     } finally {
       setConnTesting(false);
     }
@@ -181,7 +197,8 @@ const ServiceConfiguration = () => {
       const saved = await adminApi.updateTimeWindows(timeWindows);
       setTimeWindows(saved);
     } catch (err) {
-      setError('Kunde inte spara tidsfönster: ' + err.message);
+      setError(null);
+      addWarning('error', 'Kunde inte spara tidsfönster: ' + err.message);
     }
   };
 
@@ -199,7 +216,8 @@ const ServiceConfiguration = () => {
       const saved = await adminApi.updateThemeSchedules(themeSchedules);
       setThemeSchedules(saved);
     } catch (err) {
-      setError('Kunde inte spara temascheman: ' + err.message);
+      setError(null);
+      addWarning('error', 'Kunde inte spara temascheman: ' + err.message);
     }
   };
   const setManualTheme = async (theme) => {
@@ -207,8 +225,10 @@ const ServiceConfiguration = () => {
       await adminApi.setManualThemeOverride(theme);
       const status = await adminApi.getThemeStatus();
       setThemeStatus(status);
+      addWarning('info', `Manuell temaväxling satt till: ${theme}`);
     } catch (err) {
-      setError('Kunde inte sätta manuellt tema: ' + err.message);
+      setError(null);
+      addWarning('error', 'Kunde inte sätta manuellt tema: ' + err.message);
     }
   };
   const clearManualTheme = async () => {
@@ -216,8 +236,10 @@ const ServiceConfiguration = () => {
       await adminApi.clearManualOverride();
       const status = await adminApi.getThemeStatus();
       setThemeStatus(status);
+      addWarning('info', 'Manuell temaväxling rensad (automatisk)');
     } catch (err) {
-      setError('Kunde inte rensa manuellt tema: ' + err.message);
+      setError(null);
+      addWarning('error', 'Kunde inte rensa manuellt tema: ' + err.message);
     }
   };
   const updateThemeSettingField = (idx, field, value) => {
@@ -232,7 +254,8 @@ const ServiceConfiguration = () => {
       next[idx] = saved;
       setThemeSettings(next);
     } catch (err) {
-      setError('Kunde inte spara temainställningar: ' + err.message);
+      setError(null);
+      addWarning('error', 'Kunde inte spara temainställningar: ' + err.message);
     }
   };
 
@@ -243,7 +266,8 @@ const ServiceConfiguration = () => {
       const updated = await adminApi.getMonitoredUsers();
       setMonitoredUsers(updated);
     } catch (err) {
-      setError('Kunde inte lägga till användare: ' + err.message);
+      setError(null);
+      addWarning('error', 'Kunde inte lägga till användare: ' + err.message);
     }
   };
   const toggleUserActive = async (user) => {
@@ -252,7 +276,8 @@ const ServiceConfiguration = () => {
       const updated = await adminApi.getMonitoredUsers();
       setMonitoredUsers(updated);
     } catch (err) {
-      setError('Kunde inte uppdatera användare: ' + err.message);
+      setError(null);
+      addWarning('error', 'Kunde inte uppdatera användare: ' + err.message);
     }
   };
   const removeMonitoredUser = async (userId) => {
@@ -262,7 +287,8 @@ const ServiceConfiguration = () => {
         const updated = await adminApi.getMonitoredUsers();
         setMonitoredUsers(updated);
       } catch (err) {
-        setError('Kunde inte ta bort användare: ' + err.message);
+        setError(null);
+        addWarning('error', 'Kunde inte ta bort användare: ' + err.message);
       }
     }
   };
@@ -293,13 +319,7 @@ const ServiceConfiguration = () => {
         </p>
       </div>
 
-      {error && (
-        <div className="error-message">
-          <span className="error-icon">⚠️</span>
-          {error}
-          <button onClick={() => setError(null)} className="error-close">×</button>
-        </div>
-      )}
+      {/* Top error banner removed per requirement; warnings collected at bottom */}
 
       {/* Monitored Services List */}
       <div className="monitored-services">
@@ -747,6 +767,40 @@ const ServiceConfiguration = () => {
               <button onClick={()=>addMonitoredUser(u)} className="add-service-btn" disabled={!u.is_active}><span>+</span> Lägg till</button>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* Warnings/Notifications Panel */}
+      <div style={{ marginTop: '2rem' }}>
+        <div className="section-header">
+          <h2>
+            <span className="icon">⚠️</span>
+            Meddelanden och varningar
+          </h2>
+          <p className="description">Senaste händelser och fel visas här. Inga popup-fönster används.</p>
+        </div>
+        <div style={{ background: '#1f2633', color: '#e6e6e6', borderRadius: 8, padding: '12px 16px' }}>
+          {warnings.length === 0 ? (
+            <div style={{ opacity: 0.7 }}>Inga meddelanden ännu.</div>
+          ) : (
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+              {warnings.map(w => (
+                <li key={w.id} style={{ padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                  <span style={{ marginRight: 8 }}>
+                    {w.type === 'error' ? '🛑' : w.type === 'warning' ? '⚠️' : 'ℹ️'}
+                  </span>
+                  <strong style={{ textTransform: 'uppercase', fontSize: 12, opacity: 0.8, marginRight: 8 }}>{w.type}</strong>
+                  <span>{w.message}</span>
+                  <span style={{ float: 'right', opacity: 0.6 }}>{w.time}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+          {warnings.length > 0 && (
+            <div className="form-actions" style={{ marginTop: 12 }}>
+              <button className="cancel-btn" type="button" onClick={()=>setWarnings([])}>Rensa</button>
+            </div>
+          )}
         </div>
       </div>
     </div>
