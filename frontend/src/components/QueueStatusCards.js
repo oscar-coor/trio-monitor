@@ -6,7 +6,7 @@
 import React from 'react';
 import { Row, Col, Card } from 'react-bootstrap';
 
-const QueueStatusCards = ({ queues, criticalCount, warningCount, goodCount }) => {
+const QueueStatusCards = ({ queues = [], criticalCount = 0, warningCount = 0, goodCount = 0 }) => {
   const totalQueues = queues.length;
 
   return (

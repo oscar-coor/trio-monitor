@@ -2,7 +2,7 @@
  * Service Configuration Component - Manage monitored services and SLA settings
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { adminApi } from '../../services/adminApi';
 import './ServiceConfiguration.css';
 
@@ -17,8 +17,8 @@ const ServiceConfiguration = () => {
   const [themeSettings, setThemeSettings] = useState([]); // list of ThemeSettings for both LIGHT/DARK
   const [themeStatus, setThemeStatus] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null); // legacy, will be mirrored to warnings panel
   const [warnings, setWarnings] = useState([]);
+  const warningsEndRef = useRef(null);
 
   const addWarning = (type, message) => {
     const entry = {
@@ -27,10 +27,17 @@ const ServiceConfiguration = () => {
       message,
       time: new Date().toLocaleTimeString(),
     };
-    setWarnings((prev) => [...prev, entry]);
+    setWarnings((prev) => [...prev, entry].slice(-100)); // keep last 100
   };
+  useEffect(() => {
+    if (warningsEndRef.current) {
+      warningsEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [warnings]);
   const [showAddService, setShowAddService] = useState(false);
   const [editingService, setEditingService] = useState(null);
+  const [confirmRemoveServiceId, setConfirmRemoveServiceId] = useState(null);
+  const [confirmRemoveUserId, setConfirmRemoveUserId] = useState(null);
 
   // Form state for adding/editing services
   const [serviceForm, setServiceForm] = useState({
@@ -69,7 +76,6 @@ const ServiceConfiguration = () => {
       setThemeSettings(tSettings);
       setThemeStatus(tStatus);
     } catch (err) {
-      setError(null);
       addWarning('error', 'Kunde inte ladda administrationsdata: ' + err.message);
     } finally {
       setLoading(false);
@@ -102,29 +108,31 @@ const ServiceConfiguration = () => {
   const handleSubmitService = async (e) => {
     e.preventDefault();
     try {
+      const payload = {
+        ...serviceForm,
+        sla_target_seconds: Math.max(1, Number(serviceForm.sla_target_seconds) || 1),
+        warning_threshold_seconds: Math.max(1, Number(serviceForm.warning_threshold_seconds) || 1),
+      };
       if (editingService) {
-        await adminApi.updateMonitoredService(editingService.id, serviceForm);
+        await adminApi.updateMonitoredService(editingService.id, payload);
       } else {
-        await adminApi.addMonitoredService(serviceForm);
+        await adminApi.addMonitoredService(payload);
       }
       setShowAddService(false);
       setEditingService(null);
       loadData();
     } catch (err) {
-      setError(null);
       addWarning('error', 'Kunde inte spara tjänst: ' + err.message);
     }
   };
 
   const handleRemoveService = async (serviceId) => {
-    if (window.confirm('Är du säker på att du vill ta bort denna tjänst från övervakning?')) {
-      try {
-        await adminApi.removeMonitoredService(serviceId);
-        loadData();
-      } catch (err) {
-        setError(null);
-        addWarning('error', 'Kunde inte ta bort tjänst: ' + err.message);
-      }
+    try {
+      await adminApi.removeMonitoredService(serviceId);
+      setConfirmRemoveServiceId(null);
+      loadData();
+    } catch (err) {
+      addWarning('error', 'Kunde inte ta bort tjänst: ' + err.message);
     }
   };
 
@@ -136,7 +144,6 @@ const ServiceConfiguration = () => {
       });
       loadData();
     } catch (err) {
-      setError(null);
       addWarning('error', 'Kunde inte uppdatera tjänst: ' + err.message);
     }
   };
@@ -165,7 +172,6 @@ const ServiceConfiguration = () => {
       const saved = await adminApi.updateConnectionSettings(toSave);
       setConnectionSettings(saved);
     } catch (err) {
-      setError(null);
       addWarning('error', 'Kunde inte spara anslutningsinställningar: ' + err.message);
     } finally {
       setConnSaving(false);
@@ -192,12 +198,20 @@ const ServiceConfiguration = () => {
     copy[idx] = { ...copy[idx], [field]: value };
     setTimeWindows(copy);
   };
+  const sanitizeWeekdays = (arr) => {
+    const set = new Set();
+    (arr || []).forEach((n) => {
+      const v = Number(n);
+      if (Number.isInteger(v) && v >= 1 && v <= 7) set.add(v);
+    });
+    return Array.from(set).sort((a,b)=>a-b);
+  };
   const saveTimeWindows = async () => {
     try {
-      const saved = await adminApi.updateTimeWindows(timeWindows);
+      const sanitized = timeWindows.map(w => ({ ...w, weekdays: sanitizeWeekdays(w.weekdays) }));
+      const saved = await adminApi.updateTimeWindows(sanitized);
       setTimeWindows(saved);
     } catch (err) {
-      setError(null);
       addWarning('error', 'Kunde inte spara tidsfönster: ' + err.message);
     }
   };
@@ -213,10 +227,10 @@ const ServiceConfiguration = () => {
   };
   const saveThemeSchedules = async () => {
     try {
-      const saved = await adminApi.updateThemeSchedules(themeSchedules);
+      const sanitized = themeSchedules.map(s => ({ ...s, weekdays: sanitizeWeekdays(s.weekdays) }));
+      const saved = await adminApi.updateThemeSchedules(sanitized);
       setThemeSchedules(saved);
     } catch (err) {
-      setError(null);
       addWarning('error', 'Kunde inte spara temascheman: ' + err.message);
     }
   };
@@ -227,7 +241,6 @@ const ServiceConfiguration = () => {
       setThemeStatus(status);
       addWarning('info', `Manuell temaväxling satt till: ${theme}`);
     } catch (err) {
-      setError(null);
       addWarning('error', 'Kunde inte sätta manuellt tema: ' + err.message);
     }
   };
@@ -238,7 +251,6 @@ const ServiceConfiguration = () => {
       setThemeStatus(status);
       addWarning('info', 'Manuell temaväxling rensad (automatisk)');
     } catch (err) {
-      setError(null);
       addWarning('error', 'Kunde inte rensa manuellt tema: ' + err.message);
     }
   };
@@ -254,7 +266,6 @@ const ServiceConfiguration = () => {
       next[idx] = saved;
       setThemeSettings(next);
     } catch (err) {
-      setError(null);
       addWarning('error', 'Kunde inte spara temainställningar: ' + err.message);
     }
   };
@@ -266,7 +277,6 @@ const ServiceConfiguration = () => {
       const updated = await adminApi.getMonitoredUsers();
       setMonitoredUsers(updated);
     } catch (err) {
-      setError(null);
       addWarning('error', 'Kunde inte lägga till användare: ' + err.message);
     }
   };
@@ -276,20 +286,17 @@ const ServiceConfiguration = () => {
       const updated = await adminApi.getMonitoredUsers();
       setMonitoredUsers(updated);
     } catch (err) {
-      setError(null);
       addWarning('error', 'Kunde inte uppdatera användare: ' + err.message);
     }
   };
   const removeMonitoredUser = async (userId) => {
-    if (window.confirm('Ta bort denna användare från övervakning?')) {
-      try {
-        await adminApi.removeMonitoredUser(userId);
-        const updated = await adminApi.getMonitoredUsers();
-        setMonitoredUsers(updated);
-      } catch (err) {
-        setError(null);
-        addWarning('error', 'Kunde inte ta bort användare: ' + err.message);
-      }
+    try {
+      await adminApi.removeMonitoredUser(userId);
+      const updated = await adminApi.getMonitoredUsers();
+      setMonitoredUsers(updated);
+      setConfirmRemoveUserId(null);
+    } catch (err) {
+      addWarning('error', 'Kunde inte ta bort användare: ' + err.message);
     }
   };
 
@@ -361,7 +368,7 @@ const ServiceConfiguration = () => {
                       ✏️
                     </button>
                     <button 
-                      onClick={() => handleRemoveService(service.id)}
+                      onClick={() => setConfirmRemoveServiceId(service.id)}
                       className="remove-btn"
                       title="Ta bort"
                     >
@@ -369,6 +376,15 @@ const ServiceConfiguration = () => {
                     </button>
                   </div>
                 </div>
+                {confirmRemoveServiceId === service.id && (
+                  <div className="confirm-bar">
+                    <span>Ta bort denna tjänst?</span>
+                    <div className="confirm-actions">
+                      <button className="confirm-btn" onClick={() => handleRemoveService(service.id)}>Bekräfta</button>
+                      <button className="cancel-btn" onClick={() => setConfirmRemoveServiceId(null)}>Avbryt</button>
+                    </div>
+                  </div>
+                )}
                 
                 <div className="service-details">
                   <div className="sla-info">
@@ -462,7 +478,7 @@ const ServiceConfiguration = () => {
                     min="1"
                     max="300"
                     value={serviceForm.sla_target_seconds}
-                    onChange={(e) => setServiceForm({...serviceForm, sla_target_seconds: parseInt(e.target.value)})}
+                    onChange={(e) => setServiceForm({...serviceForm, sla_target_seconds: Number(e.target.value || 0)})}
                     required
                   />
                 </div>
@@ -474,7 +490,7 @@ const ServiceConfiguration = () => {
                     min="1"
                     max="300"
                     value={serviceForm.warning_threshold_seconds}
-                    onChange={(e) => setServiceForm({...serviceForm, warning_threshold_seconds: parseInt(e.target.value)})}
+                    onChange={(e) => setServiceForm({...serviceForm, warning_threshold_seconds: Number(e.target.value || 0)})}
                     required
                   />
                 </div>
@@ -743,9 +759,18 @@ const ServiceConfiguration = () => {
                 <button onClick={()=>toggleUserActive(u)} className={`toggle-btn ${u.is_active ? 'active':'inactive'}`} title={u.is_active ? 'Inaktivera':'Aktivera'}>
                   {u.is_active ? '👁️':'🚫'}
                 </button>
-                <button onClick={()=>removeMonitoredUser(u.id)} className="remove-btn" title="Ta bort">🗑️</button>
+                <button onClick={()=>setConfirmRemoveUserId(u.id)} className="remove-btn" title="Ta bort">🗑️</button>
               </div>
             </div>
+            {confirmRemoveUserId === u.id && (
+              <div className="confirm-bar">
+                <span>Ta bort denna användare?</span>
+                <div className="confirm-actions">
+                  <button className="confirm-btn" onClick={()=>removeMonitoredUser(u.id)}>Bekräfta</button>
+                  <button className="cancel-btn" onClick={()=>setConfirmRemoveUserId(null)}>Avbryt</button>
+                </div>
+              </div>
+            )}
             <div className="service-details">
               <div className="service-id">ID: {u.trio_user_id}</div>
             </div>
@@ -794,6 +819,7 @@ const ServiceConfiguration = () => {
                   <span style={{ float: 'right', opacity: 0.6 }}>{w.time}</span>
                 </li>
               ))}
+              <li ref={warningsEndRef} />
             </ul>
           )}
           {warnings.length > 0 && (
