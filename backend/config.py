@@ -33,6 +33,10 @@ class Settings(BaseSettings):
     
     # CORS Configuration
     frontend_url: str = os.getenv("FRONTEND_URL", "http://localhost:3000")
+    # Comma-separated list of allowed origins for CORS, e.g. "https://monitor.urem.org,http://localhost:3000"
+    allowed_origins: list[str] = [
+        origin.strip() for origin in os.getenv("ALLOWED_ORIGINS", f"{os.getenv('FRONTEND_URL', 'http://localhost:3000')},http://localhost:3000").split(",") if origin.strip()
+    ]
     
     class Config:
         env_file = ".env"

@@ -5,7 +5,9 @@
 
 import axios from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+// Prefer same-origin by default so /api/* calls hit the same host/domain (works with Nginx proxy)
+// Override with REACT_APP_API_URL for local dev or custom setups
+const API_BASE_URL = process.env.REACT_APP_API_URL || '';
 
 // Create axios instance with default config
 const api = axios.create({
