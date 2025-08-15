@@ -2,7 +2,7 @@
  * Admin API service for managing monitored services, users, and configuration
  */
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+const API_BASE_URL = process.env.REACT_APP_API_URL || '';
 
 class AdminApiService {
   constructor() {

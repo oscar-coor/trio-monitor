@@ -5,10 +5,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Alert } from 'react-bootstrap';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Dashboard from './components/Dashboard';
 import Header from './components/Header';
 import AlertContainer from './components/AlertContainer';
 import ApiService from './services/api';
+import ServiceConfiguration from './components/admin/ServiceConfiguration';
 import './App.css';
 
 function App() {
@@ -64,56 +66,68 @@ function App() {
     checkHealth();
   }, []);
 
-  if (loading && !dashboardData) {
-    return (
-      <div className="dashboard-container">
-        <Header 
-          connectionStatus={connectionStatus}
-          lastUpdated={lastUpdated}
-        />
-        <Container fluid className="main-content">
-          <div className="loading-spinner">
-            <div className="spinner-border spinner-border-custom text-primary" role="status">
-              <span className="visually-hidden">Laddar...</span>
-            </div>
-          </div>
-          <div className="text-center mt-3">
-            <h5>Ansluter till Trio Enterprise API...</h5>
-            <p className="text-muted">Vänligen vänta medan systemet startar upp.</p>
-          </div>
-        </Container>
-      </div>
-    );
-  }
-
-  return (
+  const DashboardView = () => (
     <div className="dashboard-container">
       <Header 
         connectionStatus={connectionStatus}
         lastUpdated={lastUpdated}
       />
-      
       <Container fluid className="main-content">
-        {error && (
-          <Row className="mb-3">
-            <Col>
-              <Alert variant="warning" className="d-flex align-items-center">
-                <i className="bi bi-exclamation-triangle-fill me-2"></i>
-                <div>
-                  <strong>Anslutningsproblem:</strong> {error}
-                  <br />
-                  <small>Systemet försöker återansluta automatiskt...</small>
-                </div>
-              </Alert>
-            </Col>
-          </Row>
+        {loading && !dashboardData ? (
+          <>
+            <div className="loading-spinner">
+              <div className="spinner-border spinner-border-custom text-primary" role="status">
+                <span className="visually-hidden">Laddar...</span>
+              </div>
+            </div>
+            <div className="text-center mt-3">
+              <h5>Ansluter till Trio Enterprise API...</h5>
+              <p className="text-muted">Vänligen vänta medan systemet startar upp.</p>
+            </div>
+          </>
+        ) : (
+          <>
+            {error && (
+              <Row className="mb-3">
+                <Col>
+                  <Alert variant="warning" className="d-flex align-items-center">
+                    <i className="bi bi-exclamation-triangle-fill me-2"></i>
+                    <div>
+                      <strong>Anslutningsproblem:</strong> {error}
+                      <br />
+                      <small>Systemet försöker återansluta automatiskt...</small>
+                    </div>
+                  </Alert>
+                </Col>
+              </Row>
+            )}
+            <Dashboard data={dashboardData} />
+          </>
         )}
-        
-        <Dashboard data={dashboardData} />
       </Container>
-      
       <AlertContainer alerts={dashboardData?.alerts || []} />
     </div>
+  );
+
+  const AdminView = () => (
+    <div className="dashboard-container">
+      <Header 
+        connectionStatus={connectionStatus}
+        lastUpdated={lastUpdated}
+      />
+      <Container fluid className="main-content">
+        <ServiceConfiguration />
+      </Container>
+    </div>
+  );
+
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<DashboardView />} />
+        <Route path="/admin" element={<AdminView />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 
