@@ -2,6 +2,75 @@
 trigger: always_on
 ---
 
+# Riktlinjer – Nuvarande fas: Testning, Refaktorering och CI (Aug 2025)
+
+Detta dokument beskriver praktiska riktlinjer för den pågående fasen där fokus är teknisk skuldnedtagning, Pydantic v2/SQLAlchemy 2‑anpassning och stabil CI.
+
+- Mål (denna fas)
+  - Kodbasen ska vara Pydantic v2‑kompatibel och ren från legacy‑mönster (json_encoders, .dict()).
+  - SQLAlchemy 2.0‑stil används konsekvent (orm.declarative_base, typhjälpmedel, future‑API).
+  - CI kör Pytest med coverage, mypy och ruff. Coverage‑rapport publiceras och badges visas i README.
+  - Varningsfilter i pytest.ini hålls minimala och skärps efterhand tills testkörning är ren.
+
+- Versionsmål
+  - Python 3.12+ (3.13 i matrisen)
+  - FastAPI senaste kompatibla i requirements
+  - Pydantic v2
+  - SQLAlchemy 2.0.36
+  - Pytest + pytest-cov
+  - mypy, ruff
+
+- Kodkonventioner (Backend)
+  - Pydantic v2
+    - Använd .model_dump() istället för .dict().
+    - Använd model_config = ConfigDict(...) (INTE class Config) om/ när specialkonfig krävs.
+    - Undvik json_encoders; lita på Pydantic v2 standardseriering för datetime/date/time.
+  - SQLAlchemy 2
+    - Importera declarative_base från sqlalchemy.orm.
+    - Följ 2.0‑stilen (typer på kolumner och modeller, ingen deprecated API).
+  - FastAPI
+    - Type hints på samtliga endpoints och hjälpfunktioner.
+    - Depends för beroendeinjektion (auth, db‑sessioner, konfig).
+  - Säkerhet och logging
+    - Hantera hemligheter i .env (ingen hårdkodning). Logga aldrig hemligheter.
+    - Vid behov använd "safe dump" (t.ex. settings.model_dump() med maskering) för loggning.
+
+- Testning
+  - Pytest
+    - pytest.ini innehåller: registrerade markers (t.ex. integration), addopts "-q" och begränsade filterwarnings.
+    - Mål: >= 80% coverage. Kör:
+      - Lokalt: pytest -q --cov=backend --cov-report=term-missing
+      - CI: genererar coverage.xml och laddar upp som artifact.
+  - Varningspolicy
+    - Behåll få filter i pytest.ini nu; ta bort/strama efter att koden är helt uppdaterad.
+
+- CI (GitHub Actions)
+  - Matris: Python 3.12 och 3.13.
+  - Steg: Install → Pytest m/coverage → ladda upp coverage.xml → mypy → ruff.
+  - mypy/ruff körs initialt som non‑blocking (continue-on-error). När baseline är uppnådd görs de blockerande.
+  - README innehåller CI‑badge och instruktioner för coverage, mypy, ruff.
+
+- Prestanda och Polling
+  - Polling varje 10 s. Cache‑TTL i SQLite < 5 s för att minimera externa API‑anrop.
+  - APScheduler för schemalagd hämtning, robust felhantering och retries.
+
+- Domänspecifikt (projektmål)
+  - 20‑sekunders kötidsgräns; 80% service level.
+  - Admin‑konfigurationer för val av köer/användare/SLA och tema‑schema (ljus/mörk) med realtidsuppdatering.
+
+- Kodkvalitet
+  - Formatterare: Black (Python) och Prettier (React). Lint: ruff.
+  - Konsekvent namngivning och docstrings där det ger värde.
+
+- PR/Commit‑policy
+  - Små, fokuserade PR:s. Beskriv syfte, påverkan och ev. migrationssteg.
+  - Kör tester lokalt innan PR. PR ska vara grön i CI.
+  - Rekommenderade commit‑prefix: chore, fix, feat, refactor, test, docs, ci.
+
+—
+
+Nedan följer tidigare version (legacy‑referens). Den kommer successivt att bantas när alla delar är uppdaterade.
+
 Backend: Python och FastAPI (Version 3.12+)
 För backend-delen, fokusera på FastAPI:s styrkor som typningsstöd och beroendeinjektion. Följ dessa riktlinjer för att undvika vanliga fallgropar och säkerställa prestanda.
 
