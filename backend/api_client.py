@@ -37,6 +37,9 @@ class TrioAPIClient:
     async def get_agent_states(self) -> list[AgentState]:
         """Fetch current agent states from Trio API."""
         try:
+            if settings.use_mock_data:
+                logger.info("USE_MOCK_DATA enabled: returning mock agent states")
+                return self._get_mock_agent_states()
             endpoint = f"/cc/{settings.trio_contact_center_id}/agents/state"
             agents_data = await self._handle_api_request(endpoint)
             agents = []
@@ -88,6 +91,9 @@ class TrioAPIClient:
     async def get_queue_metrics(self) -> list[QueueMetrics]:
         """Fetch current queue metrics from Trio API."""
         try:
+            if settings.use_mock_data:
+                logger.info("USE_MOCK_DATA enabled: returning mock queue metrics")
+                return self._get_mock_queue_metrics()
             endpoint = f"/cc/{settings.trio_contact_center_id}/services/state"
             queues_data = await self._handle_api_request(endpoint)
             queues = []
@@ -151,6 +157,9 @@ class TrioAPIClient:
     async def get_service_level_metrics(self) -> ServiceLevelMetrics:
         """Fetch service level metrics from Trio API."""
         try:
+            if settings.use_mock_data:
+                logger.info("USE_MOCK_DATA enabled: returning mock service level metrics")
+                return self._get_mock_service_level()
             session = await self.auth_manager.get_session()
             # Use the correct Trio API endpoint for cases (to calculate service level)
             response = await session.get(f"/cc/{settings.trio_contact_center_id}/services/cases")

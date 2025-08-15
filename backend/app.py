@@ -38,13 +38,17 @@ async def lifespan(app: FastAPI):
     logger.info("Starting Trio Monitor Backend...")
     
     try:
-        # Test connection to Trio Enterprise API
-        connection_ok = await auth_manager.test_connection()
-        if not connection_ok:
-            logger.warning("Failed to connect to Trio Enterprise API")
-            # Continue startup even if connection test fails - scheduler will retry
+        # In mock mode, skip external connectivity checks
+        if getattr(settings, 'use_mock_data', False):
+            logger.info("USE_MOCK_DATA enabled: skipping external connection test")
+        else:
+            # Test connection to Trio Enterprise API
+            connection_ok = await auth_manager.test_connection()
+            if not connection_ok:
+                logger.warning("Failed to connect to Trio Enterprise API")
+                # Continue startup even if connection test fails - scheduler will retry
         
-        # Start the scheduler with error recovery
+        # Start the scheduler with error recovery (works with mock data too)
         trio_scheduler.start()
         
         logger.info("Trio Monitor Backend started successfully")
