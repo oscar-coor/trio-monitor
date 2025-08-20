@@ -25,7 +25,13 @@ class Settings(BaseSettings):
     debug: bool = os.getenv("DEBUG", "True").lower() == "true"
     # When true, backend serves mock data instead of calling Trio API
     use_mock_data: bool = os.getenv("USE_MOCK_DATA", "False").lower() == "true"
-    polling_interval: int = int(os.getenv("POLLING_INTERVAL", "10"))
+    # In mock mode, default to faster polling (2s) unless explicitly overridden
+    polling_interval: int = int(
+        os.getenv(
+            "POLLING_INTERVAL",
+            "2" if os.getenv("USE_MOCK_DATA", "False").lower() == "true" else "10",
+        )
+    )
     cache_timeout: int = int(os.getenv("CACHE_TIMEOUT", "5"))
     queue_time_limit: int = int(os.getenv("QUEUE_TIME_LIMIT", "20"))
     warning_threshold: int = int(os.getenv("WARNING_THRESHOLD", "18"))
