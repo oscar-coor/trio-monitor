@@ -3,35 +3,100 @@
  * Displays real-time alerts and notifications
  */
 
-import React, { useState, useEffect } from 'react';
-import { Alert, Button } from 'react-bootstrap';
+import React, { useState, useEffect, useRef } from 'react';
+import { Alert } from 'react-bootstrap';
 
 const AlertContainer = ({ alerts }) => {
   const [visibleAlerts, setVisibleAlerts] = useState([]);
+  // Suppress re-showing dismissed/duplicate alerts for a short period
+  const suppressedRef = useRef(new Map()); // key -> expiry timestamp (ms)
+  const SUPPRESS_TTL_MS = 15000; // 15s suppression window
+
+  const deriveStableKey = (message, type) => {
+    if (!message) return `${type}:unknown`;
+    const msg = String(message);
+    // Daily limit breach
+    if (msg.startsWith('KRITISK: Daglig kötidsgräns överskriden')) {
+      return 'critical:daily_limit';
+    }
+    // Service level below target
+    if (msg.startsWith('Servicenivå under mål')) {
+      return 'service_level:below_target';
+    }
+    // Queue critical: "KRITISK: <queue> har väntetid över ..."
+    const critMatch = msg.match(/^KRITISK:\s+(.+?)\s+har väntetid/);
+    if (critMatch && critMatch[1]) {
+      const queueName = critMatch[1].trim();
+      return `critical:queue:${queueName}`;
+    }
+    // Queue warning: "VARNING: <queue> närmar sig gränsen"
+    const warnMatch = msg.match(/^VARNING:\s+(.+?)\s+närmar sig gränsen/);
+    if (warnMatch && warnMatch[1]) {
+      const queueName = warnMatch[1].trim();
+      return `warning:queue:${queueName}`;
+    }
+    // Fallback to message-based key
+    return `${type}:${msg}`;
+  };
+
+  const normalizeAlert = (alert, index) => {
+    if (typeof alert === 'string') {
+      const lower = alert.toLowerCase();
+      const type = lower.includes('kritisk') ? 'critical' : lower.includes('varning') ? 'warning' : 'info';
+      const key = deriveStableKey(alert, type);
+      return {
+        id: key, // stable id
+        key,
+        message: alert,
+        type,
+        timestamp: new Date()
+      };
+    }
+    // Ensure stable key for object alerts
+    const type = alert.type || 'info';
+    const message = alert.message || '';
+    const key = alert.id || deriveStableKey(message, type);
+    return {
+      id: key,
+      key,
+      message,
+      type,
+      timestamp: alert.timestamp ? new Date(alert.timestamp) : new Date()
+    };
+  };
 
   useEffect(() => {
-    if (alerts && alerts.length > 0) {
-      // Convert string alerts to objects if needed
-      const alertObjects = alerts.map((alert, index) => {
-        if (typeof alert === 'string') {
-          return {
-            id: `alert_${index}_${Date.now()}`,
-            message: alert,
-            type: alert.toLowerCase().includes('kritisk') ? 'critical' : 
-                  alert.toLowerCase().includes('varning') ? 'warning' : 'info',
-            timestamp: new Date()
-          };
-        }
-        return alert;
-      });
+    if (!alerts) return;
 
-      setVisibleAlerts(alertObjects);
-    } else {
-      setVisibleAlerts([]);
+    const now = Date.now();
+    // Cleanup expired suppressions
+    for (const [k, exp] of suppressedRef.current.entries()) {
+      if (exp <= now) suppressedRef.current.delete(k);
     }
+
+    const incoming = alerts.map(normalizeAlert);
+
+    setVisibleAlerts(prev => {
+      const existingById = new Map(prev.map(a => [a.id, a]));
+      const next = [...prev];
+
+      for (const a of incoming) {
+        // Skip if suppressed
+        const suppressedUntil = suppressedRef.current.get(a.id);
+        if (suppressedUntil && suppressedUntil > now) continue;
+        // Add only if not already visible
+        if (!existingById.has(a.id)) {
+          next.push(a);
+          existingById.set(a.id, a);
+        }
+      }
+      return next;
+    });
   }, [alerts]);
 
   const dismissAlert = (alertId) => {
+    // Suppress this alert for a period so it doesn't immediately reappear
+    suppressedRef.current.set(alertId, Date.now() + SUPPRESS_TTL_MS);
     setVisibleAlerts(prev => prev.filter(alert => alert.id !== alertId));
   };
 
