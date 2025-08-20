@@ -20,8 +20,9 @@ function App() {
   const [lastUpdated, setLastUpdated] = useState(null);
   const [connectionStatus, setConnectionStatus] = useState('connecting');
 
-  // Poll data every 10 seconds
+  // Poll data (default 2s; override with REACT_APP_POLLING_INTERVAL)
   useEffect(() => {
+    const POLL_MS = Number(process.env.REACT_APP_POLLING_INTERVAL || 2000);
     const fetchData = async () => {
       try {
         setError(null);
@@ -46,11 +47,11 @@ function App() {
     fetchData();
 
     // Set up polling interval
-    const interval = setInterval(fetchData, 10000); // 10 seconds
+    const interval = setInterval(fetchData, POLL_MS);
 
     // Cleanup
     return () => clearInterval(interval);
-  }, [dashboardData]);
+  }, []);
 
   // Health check on mount
   useEffect(() => {
