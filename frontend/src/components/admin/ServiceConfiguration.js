@@ -2,7 +2,7 @@
  * Service Configuration Component - Manage monitored services and SLA settings
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { adminApi } from '../../services/adminApi';
 import './ServiceConfiguration.css';
 
@@ -50,9 +50,9 @@ const ServiceConfiguration = () => {
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [loadData]);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       const [monitored, available, mUsers, aUsers, windows, conn, sched, tSettings, tStatus] = await Promise.all([
@@ -80,7 +80,7 @@ const ServiceConfiguration = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   const handleAddService = (service) => {
     setServiceForm({

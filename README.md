@@ -8,6 +8,12 @@
 
 Ett modernt dashboard för realtidsövervakning av kötider i kontaktcenter med fokus på 20-sekunders gränsen och servicenivåmål på 80%.
 
+## 📄 Dokumentation
+- [DEPLOYMENT – Ubuntu (systemd + Nginx)](./DEPLOYMENT.md)
+- [ADMIN GUIDE – Konfiguration och användning](./ADMIN_GUIDE.md)
+- [CONTRIBUTING – utveckling, tester och CI](./CONTRIBUTING.md)
+- [Systemöversikt och Progressionsplan](./systemöversikt.md)
+
 ## 🎯 Huvudfunktioner
 
 - **Realtidsövervakning** - Uppdateras var 10:e sekund

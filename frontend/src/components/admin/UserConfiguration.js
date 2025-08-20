@@ -13,6 +13,7 @@ const UserConfiguration = () => {
   const [error, setError] = useState(null);
   const [showAddUser, setShowAddUser] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
+  const [confirmRemoveUserId, setConfirmRemoveUserId] = useState(null);
 
   // Form state for adding/editing users
   const [userForm, setUserForm] = useState({
@@ -80,13 +81,12 @@ const UserConfiguration = () => {
   };
 
   const handleRemoveUser = async (userId) => {
-    if (window.confirm('Är du säker på att du vill ta bort denna användare från övervakning?')) {
-      try {
-        await adminApi.removeMonitoredUser(userId);
-        loadData();
-      } catch (err) {
-        setError('Kunde inte ta bort användare: ' + err.message);
-      }
+    try {
+      await adminApi.removeMonitoredUser(userId);
+      setConfirmRemoveUserId(null);
+      loadData();
+    } catch (err) {
+      setError('Kunde inte ta bort användare: ' + err.message);
     }
   };
 
@@ -195,7 +195,7 @@ const UserConfiguration = () => {
                       ✏️
                     </button>
                     <button 
-                      onClick={() => handleRemoveUser(user.id)}
+                      onClick={() => setConfirmRemoveUserId(user.id)}
                       className="remove-btn"
                       title="Ta bort"
                     >
@@ -203,7 +203,15 @@ const UserConfiguration = () => {
                     </button>
                   </div>
                 </div>
-                
+                {confirmRemoveUserId === user.id && (
+                  <div className="confirm-bar">
+                    <span>Ta bort denna användare?</span>
+                    <div className="confirm-actions">
+                      <button className="confirm-btn" onClick={() => handleRemoveUser(user.id)}>Bekräfta</button>
+                      <button className="cancel-btn" onClick={() => setConfirmRemoveUserId(null)}>Avbryt</button>
+                    </div>
+                  </div>
+                )}
                 <div className="user-meta">
                   <div className="meta-item">
                     <span className="meta-label">Trio ID:</span>

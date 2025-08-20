@@ -103,4 +103,7 @@
 
 ## 13) Öppna frågor
 - Trio endpoints och rate limits per miljö? Roll-/behörighetsmodell för admin? Historik‑retention och rapportkrav (exportformat, periodisering)? Driftform (Docker/on‑prem/cloud) och certifikat/PKI?
-"@ -Encoding UTF8
+
+---
+Senast uppdaterad: Aug 2025. Dokumentet är synkat med `README.md`, `DEPLOYMENT.md`, `ADMIN_GUIDE.md` och CI-workflow under `.github/workflows/python-ci.yml`.
+Fokus i denna fas: Pydantic v2, SQLAlchemy 2-stil, stabil CI (pytest+coverage, mypy, ruff).

@@ -1,5 +1,12 @@
 <img src="https://r2cdn.perplexity.ai/pplx-full-logo-primary-dark%402x.png" style="height:64px;margin-right:32px"/>
 
+> [!NOTE]
+> ARCHIVED (Aug 2025): Detta dokument är ett UI/UX-koncept. Se aktuell dokumentation:
+> - `README.md` (översikt)
+> - `DEPLOYMENT.md` (Ubuntu deployment)
+> - `ADMIN_GUIDE.md` (admin-konfiguration)
+> - `CONTRIBUTING.md` (utveckling och tester)
+
 # Realtidsmonitor för Trio Enterprise API - Modernt Dashboard med 20-Sekunders Kötidsgräns
 
 ## Dashboard Design för Optimal Användarupplevelse
