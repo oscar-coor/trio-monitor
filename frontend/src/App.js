@@ -3,7 +3,7 @@
  * Real-time dashboard for call center monitoring
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Container, Row, Col, Alert } from 'react-bootstrap';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Dashboard from './components/Dashboard';
@@ -19,6 +19,7 @@ function App() {
   const [error, setError] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [connectionStatus, setConnectionStatus] = useState('connecting');
+  const hasDataRef = useRef(false);
 
   // Poll data (default 2s; override with REACT_APP_POLLING_INTERVAL)
   useEffect(() => {
@@ -31,13 +32,14 @@ function App() {
         setLastUpdated(new Date());
         setConnectionStatus('connected');
         setLoading(false);
+        hasDataRef.current = true;
       } catch (err) {
         console.error('Failed to fetch dashboard data:', err);
         setError('Kunde inte hämta data från servern');
         setConnectionStatus('disconnected');
         
         // Don't set loading to false on first error, keep trying
-        if (!dashboardData) {
+        if (!hasDataRef.current) {
           setLoading(false);
         }
       }

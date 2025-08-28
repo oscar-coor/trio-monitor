@@ -3,7 +3,7 @@
  * Displays real-time alerts and notifications
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Alert } from 'react-bootstrap';
 
 const AlertContainer = ({ alerts }) => {
@@ -12,7 +12,7 @@ const AlertContainer = ({ alerts }) => {
   const suppressedRef = useRef(new Map()); // key -> expiry timestamp (ms)
   const SUPPRESS_TTL_MS = 15000; // 15s suppression window
 
-  const deriveStableKey = (message, type) => {
+  const deriveStableKey = useCallback((message, type) => {
     if (!message) return `${type}:unknown`;
     const msg = String(message);
     // Daily limit breach
@@ -37,9 +37,9 @@ const AlertContainer = ({ alerts }) => {
     }
     // Fallback to message-based key
     return `${type}:${msg}`;
-  };
+  }, []);
 
-  const normalizeAlert = (alert, index) => {
+  const normalizeAlert = useCallback((alert, index) => {
     if (typeof alert === 'string') {
       const lower = alert.toLowerCase();
       const type = lower.includes('kritisk') ? 'critical' : lower.includes('varning') ? 'warning' : 'info';
@@ -63,7 +63,7 @@ const AlertContainer = ({ alerts }) => {
       type,
       timestamp: alert.timestamp ? new Date(alert.timestamp) : new Date()
     };
-  };
+  }, [deriveStableKey]);
 
   useEffect(() => {
     if (!alerts) return;
@@ -92,7 +92,7 @@ const AlertContainer = ({ alerts }) => {
       }
       return next;
     });
-  }, [alerts]);
+  }, [alerts, normalizeAlert]);
 
   const dismissAlert = (alertId) => {
     // Suppress this alert for a period so it doesn't immediately reappear
