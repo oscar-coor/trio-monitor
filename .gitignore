@@ -56,8 +56,10 @@ pnpm-debug.log*
 # SQLite
 *.sqlite
 *.sqlite3
-# Track the primary DB file in repo
-!db.sqlite
+db.sqlite
+db.sqlite-*
+*.sqlite-*
+*.sqlite3-*
 
 # ---- Logs ----
 logs/
