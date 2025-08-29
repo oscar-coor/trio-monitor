@@ -4,7 +4,7 @@ import logging
 from datetime import date
 
 from admin_service import admin_service
-from database import get_db
+from database_improved import get_db
 from fastapi import APIRouter, Depends, HTTPException, status
 from models import (
     AdminConfigResponse,

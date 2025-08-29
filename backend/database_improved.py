@@ -7,9 +7,9 @@ from datetime import datetime, timedelta
 from typing import Any
 
 from config_improved import settings
-from sqlalchemy import Boolean, Column, DateTime, Float, Index, Integer, String, Text, create_engine
+from sqlalchemy import Boolean, Column, DateTime, Float, Index, Integer, String, Text, create_engine, ForeignKey
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
-from sqlalchemy.orm import Session, declarative_base, sessionmaker
+from sqlalchemy.orm import Session, declarative_base, sessionmaker, relationship
 from sqlalchemy.pool import NullPool
 
 logger = logging.getLogger(__name__)
@@ -106,6 +106,98 @@ class HistoricalDataDB(Base):
     __table_args__ = (
         Index('idx_historical_queue_time', 'queue_id', 'timestamp'),
     )
+
+
+class MonitoredServiceDB(Base):
+    """Monitored service configuration."""
+    __tablename__ = "monitored_services"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    service_id = Column(String(100), unique=True, nullable=False, index=True)
+    service_name = Column(String(255), nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime, default=datetime.now, nullable=False)
+    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now, nullable=False)
+
+
+class MonitoredUserDB(Base):
+    """Monitored user configuration."""
+    __tablename__ = "monitored_users"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(String(100), unique=True, nullable=False, index=True)
+    user_name = Column(String(255), nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime, default=datetime.now, nullable=False)
+    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now, nullable=False)
+
+
+class TimeWindowDB(Base):
+    """Time window configuration for SLA measurements."""
+    __tablename__ = "time_windows"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    day_type = Column(String(20), unique=True, nullable=False)  # 'weekday' or 'weekend'
+    start_time = Column(String(5), nullable=False)  # HH:MM format
+    end_time = Column(String(5), nullable=False)    # HH:MM format
+    is_active = Column(Boolean, default=True, nullable=False)
+    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now, nullable=False)
+
+
+class SLAMetricsDB(Base):
+    """SLA metrics for monitored services."""
+    __tablename__ = "sla_metrics"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    service_id = Column(String(100), nullable=False, index=True)
+    date = Column(DateTime, nullable=False, index=True)
+    total_calls = Column(Integer, default=0, nullable=False)
+    calls_within_sla = Column(Integer, default=0, nullable=False)
+    average_wait_time = Column(Float, default=0.0, nullable=False)
+    max_wait_time = Column(Integer, default=0, nullable=False)
+    sla_percentage = Column(Float, default=0.0, nullable=False)
+    created_at = Column(DateTime, default=datetime.now, nullable=False)
+    
+    __table_args__ = (
+        Index('idx_sla_service_date', 'service_id', 'date'),
+    )
+
+
+class ConnectionSettingsDB(Base):
+    """Connection settings for Trio API."""
+    __tablename__ = "connection_settings"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    key = Column(String(100), unique=True, nullable=False, index=True)
+    value = Column(Text, nullable=True)
+    is_encrypted = Column(Boolean, default=False, nullable=False)
+    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now, nullable=False)
+
+
+class ThemeScheduleDB(Base):
+    """Theme schedule configuration."""
+    __tablename__ = "theme_schedules"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    day_type = Column(String(20), unique=True, nullable=False)  # 'weekday', 'weekend', or 'manual'
+    light_theme_start = Column(String(5), nullable=False)  # HH:MM format
+    dark_theme_start = Column(String(5), nullable=False)   # HH:MM format
+    is_active = Column(Boolean, default=True, nullable=False)
+    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now, nullable=False)
+
+
+class ThemeSettingsDB(Base):
+    """Theme settings for UI customization."""
+    __tablename__ = "theme_settings"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    theme_name = Column(String(50), unique=True, nullable=False)  # 'light', 'dark', etc.
+    primary_color = Column(String(7), nullable=False)      # Hex color
+    secondary_color = Column(String(7), nullable=False)    # Hex color
+    background_color = Column(String(7), nullable=False)   # Hex color
+    text_color = Column(String(7), nullable=False)        # Hex color
+    is_active = Column(Boolean, default=True, nullable=False)
+    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now, nullable=False)
 
 
 # Database configuration with connection pooling

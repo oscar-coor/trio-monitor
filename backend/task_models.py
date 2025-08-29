@@ -56,7 +56,7 @@ class TrioTask(Base):
     # Additional metadata
     is_synced: Mapped[bool] = mapped_column(Boolean, default=False)  # Whether synced with Trio API
     sync_error: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # Last sync error if any
-    metadata: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # JSON field for extra data
+    extra_data: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # JSON field for extra data
     
     def __repr__(self) -> str:
         return f"<TrioTask(id={self.id}, title='{self.title}', status='{self.status}')>"

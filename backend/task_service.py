@@ -11,10 +11,9 @@ from sqlalchemy import desc, or_
 from task_models import TrioTask, TaskCategory, TaskComment, TaskHistory
 from database_improved import get_db
 from api_client import TrioAPIClient
-from config_improved import get_settings
+from config_improved import settings
 
 logger = logging.getLogger(__name__)
-settings = get_settings()
 
 
 class TaskService:
