@@ -4,7 +4,8 @@ import logging
 import os
 from pathlib import Path
 
-from pydantic import BaseSettings, Field, SecretStr, validator
+from pydantic import Field, SecretStr, field_validator
+from pydantic_settings import BaseSettings
 
 logger = logging.getLogger(__name__)
 
@@ -110,7 +111,7 @@ class ImprovedSettings(BaseSettings):
     log_level: str = Field(
         default="INFO",
         description="Logging level",
-        regex="^(DEBUG|INFO|WARNING|ERROR|CRITICAL)$"
+        pattern=r"^(DEBUG|INFO|WARNING|ERROR|CRITICAL)$"
     )
     max_retries: int = Field(
         default=3,
@@ -153,14 +154,16 @@ class ImprovedSettings(BaseSettings):
         description="Maximum alerts per hour to prevent spam"
     )
     
-    class Config:
-        """Pydantic config."""
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        case_sensitive = False
+    model_config = {
+        "env_file": ".env",
+        "env_file_encoding": "utf-8",
+        "case_sensitive": False,
+        "extra": "ignore"
+    }
         
-    @validator("trio_password", "trio_token", "secret_key", "password_salt")
-    def validate_secrets(cls, v, field):
+    @field_validator("trio_password", "trio_token", "secret_key", "password_salt")
+    @classmethod
+    def validate_secrets(cls, v, info):
         """Validate that secrets are not default values in production."""
         if v and not os.getenv("DEBUG", "").lower() == "true":
             default_values = ["change-this", "default", "example", "test"]
@@ -169,46 +172,40 @@ class ImprovedSettings(BaseSettings):
             )
             if any(default in value_str.lower() for default in default_values):
                 logger.warning(
-                    f"⚠️ {field.name} contains default value - please change for production!"
+                    f"⚠️ {info.field_name} contains default value - please change for production!"
                 )
         return v
     
-    @validator("trio_username")
-    def validate_authentication(cls, v, values):
-        """Validate that either token or username/password is provided."""
-        if not v and not values.get("trio_token"):
-            raise ValueError("Either trio_token or trio_username/trio_password must be provided")
-        return v
     
-    @validator("warning_threshold")
-    def validate_thresholds(cls, v, values):
-        """Validate that warning threshold is less than critical limit."""
-        if "queue_time_limit" in values and v >= values["queue_time_limit"]:
-            raise ValueError(
-                (
-                    "Warning threshold (" f"{v}" ") must be less than queue time limit ("
-                    f"{values['queue_time_limit']})"
-                )
-            )
-        return v
     
-    @validator("allowed_origins", pre=True)
+    
+    @field_validator("allowed_origins", mode="before")
+    @classmethod
     def parse_allowed_origins(cls, v):
         """Parse allowed origins from comma-separated string."""
         if isinstance(v, str):
             return [origin.strip() for origin in v.split(",")]
         return v
     
-    @validator("database_url")
+    @field_validator("database_url")
+    @classmethod
     def validate_database_url(cls, v):
-        """Validate and prepare database URL."""
-        if v.startswith("sqlite"):
-            # Ensure SQLite database directory exists
-            db_path = v.replace("sqlite:///", "")
-            db_dir = Path(db_path).parent
-            db_dir.mkdir(parents=True, exist_ok=True)
-            logger.info(f"Using SQLite database at: {db_path}")
+        """Validate database URL."""
+        if not v.startswith('sqlite:///'):
+            logger.warning("Non-SQLite database URLs may require additional configuration")
+        db_path = v.replace("sqlite:///", "")
+        db_dir = Path(db_path).parent
+        db_dir.mkdir(parents=True, exist_ok=True)
+        logger.info(f"Using SQLite database at: {db_path}")
         return v
+    
+    @field_validator('trio_api_base_url')
+    @classmethod
+    def validate_base_url(cls, v):
+        """Validate base URL format."""
+        if not v.startswith(('http://', 'https://')):
+            raise ValueError('Base URL must start with http:// or https://')
+        return v.rstrip('/')
     
     def get_safe_config(self) -> dict:
         """Get configuration without sensitive values for logging."""

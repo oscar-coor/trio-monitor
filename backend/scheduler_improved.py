@@ -8,8 +8,8 @@ from typing import Any
 from api_client import api_client
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
-from config import settings
-from database import db_manager, get_db
+from config_improved import settings
+from database_improved import db_manager, get_db
 from models import AlertData, DashboardData
 
 logger = logging.getLogger(__name__)
