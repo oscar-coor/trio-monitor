@@ -6,7 +6,7 @@ from contextlib import contextmanager
 from datetime import datetime, timedelta
 from typing import Any
 
-from config import settings
+from config_improved import settings
 from sqlalchemy import Boolean, Column, DateTime, Float, Index, Integer, String, Text, create_engine
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session, declarative_base, sessionmaker
@@ -242,7 +242,7 @@ class ImprovedDatabaseManager:
             db.rollback()
             raise
     
-    def get_cached_data(self, db: Session, max_age_seconds: int = 300) -> dict[str, Any] | None:
+    def get_cached_data(self, db: Session, max_age_seconds: int = 8) -> dict[str, Any] | None:
         """Get cached data with age validation."""
         try:
             cutoff_time = datetime.now() - timedelta(seconds=max_age_seconds)

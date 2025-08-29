@@ -3,8 +3,8 @@
 import logging
 from datetime import datetime
 
-from auth import auth_manager
-from config import settings
+from auth_improved import auth_manager
+from config_improved import settings
 from models import AgentState, AgentStatus, QueueMetrics, QueueStatus, ServiceLevelMetrics
 
 logger = logging.getLogger(__name__)

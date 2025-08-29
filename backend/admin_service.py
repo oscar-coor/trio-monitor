@@ -3,9 +3,9 @@
 import logging
 from datetime import date, datetime
 
-from auth import auth_manager
-from config import settings
-from database import (
+from auth_improved import auth_manager
+from config_improved import settings
+from database_improved import (
     ConnectionSettingsDB,
     MonitoredServiceDB,
     MonitoredUserDB,

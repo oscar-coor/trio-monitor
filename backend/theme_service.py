@@ -4,7 +4,7 @@ import logging
 from datetime import datetime
 from datetime import time as dt_time
 
-from database import ThemeScheduleDB, ThemeSettingsDB
+from database_improved import ThemeScheduleDB, ThemeSettingsDB
 from models import ThemeSchedule, ThemeSettings, ThemeStatusResponse, ThemeType
 from sqlalchemy.orm import Session
 

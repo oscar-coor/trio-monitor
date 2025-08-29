@@ -1,7 +1,3 @@
----
-trigger: always_on
----
-
 # Riktlinjer – Nuvarande fas: Testning, Refaktorering och CI (Aug 2025)
 
 Detta dokument beskriver praktiska riktlinjer för den pågående fasen där fokus är teknisk skuldnedtagning, Pydantic v2/SQLAlchemy 2‑anpassning och stabil CI.
@@ -10,7 +6,7 @@ Detta dokument beskriver praktiska riktlinjer för den pågående fasen där fok
   - Backend kör FastAPI + Pydantic v2 + SQLAlchemy 2 (2.0‑stil) med 10s polling och SQLite‑cache.
   - Admin/tema är implementerat: val av köer/användare, tidsfönster, SLA‑mätning, temaschema och temainställningar.
   - Trio‑anslutningsinställningar (bas‑URL, användare/lösen, API‑token, CC‑ID) kan hanteras via API och uppdaterar auth i runtime.
-
+  
 - Mål (denna fas)
   - Kodbasen ska vara Pydantic v2‑kompatibel och ren från legacy‑mönster (json_encoders, .dict()).
   - SQLAlchemy 2.0‑stil används konsekvent (orm.declarative_base, typhjälpmedel, future‑API).
@@ -107,8 +103,25 @@ Detta dokument beskriver praktiska riktlinjer för den pågående fasen där fok
 
 —
 
+Nedan följer tidigare version (legacy‑referens). Den kommer successivt att bantas när alla delar är uppdaterade.
+
 Backend: Python och FastAPI (Version 3.12+)
 För backend-delen, fokusera på FastAPI:s styrkor som typningsstöd och beroendeinjektion. Följ dessa riktlinjer för att undvika vanliga fallgropar och säkerställa prestanda.
+
+Projektstruktur: Organisera koden i moduler för skalbarhet. Använd en struktur som:
+text
+backend/
+├── app.py               # Huvudapp med FastAPI och endpoints
+├── config.py            # Konfiguration (URL, credentials via .env)
+├── auth.py              # Autentisering
+├── api_client.py        # API-anrop till TE API
+├── database.py          # SQLite-modeller
+├── scheduler.py         # Polling-loop
+├── models.py            # Datamodeller
+├── tests/               # Tester
+├── .env                 # Miljövariabler
+└── db.sqlite            # Cache-DB
+Detta främjar separation av ansvar och enkel testning.
 
 Typningsstöd och Validering: Använd Python type hints för alla funktioner och endpoints. Detta genererar automatisk dokumentation och validering. Exempel:
 
@@ -160,6 +173,15 @@ Detta säkerställer reaktivitet och enkel state-hantering.
 
 Projektstruktur: Organisera som:
 
+text
+frontend/
+├── src/
+│   ├── App.js           # Huvudkomponent
+│   ├── components/      # Dashboard.js, AdminView.js
+│   ├── services/        # Axios-klient
+│   └── index.js         # Entry point
+├── public/              # Statiska filer
+└── package.json         # Beroenden
 Håll komponenter återanvändbara och modulära.
 
 State Management: Använd useState och useEffect för lokal state. För komplexa fall, integrera Context API eller Redux. Undvik onödiga re-renders med useMemo.
@@ -176,3 +198,5 @@ AI-Specifika Principer: Agenten bör följa en "plan-act-observe"-cykel: Skapa e
 Säkerhet och Etik: Undvik hårdkodade hemligheter; använd .env. Säkerställ att koden är fri från sårbarheter som XSS.
 
 Dokumentation och Läsbarhet: Kommentera kod och använd konsekventa namngivningar. Formatera med Black för Python och Prettier för React.
+
+Integration med Projektet: Bygg på befintlig arkitektur från konversationen, som polling var 10:e sekund och caching. Inkludera 20-sekunders kötidsgräns med visuella indikatorer.

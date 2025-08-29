@@ -9,17 +9,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
 # Use improved modules with better error handling and security
-try:
-    from auth_improved import auth_manager
-    from config_improved import settings
-    from database_improved import get_db
-    from scheduler_improved import trio_scheduler
-except Exception:
-    # Fallback to original modules if improved not available
-    from auth import auth_manager
-    from config import settings
-    from database import get_db
-    from scheduler import trio_scheduler
+from auth_improved import auth_manager
+from config_improved import settings
+from database_improved import get_db
+from scheduler_improved import trio_scheduler
 
 from admin_api import admin_router, theme_router
 

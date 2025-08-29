@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 from typing import Any
 
 import httpx
-from config import settings
+from config_improved import settings
 
 logger = logging.getLogger(__name__)
 

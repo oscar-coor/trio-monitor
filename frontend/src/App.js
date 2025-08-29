@@ -9,119 +9,124 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Dashboard from './components/Dashboard';
 import Header from './components/Header';
 import AlertContainer from './components/AlertContainer';
+import ErrorBoundary from './components/ErrorBoundary';
+import { AppProvider, useAppContext } from './context/AppContext';
 import ApiService from './services/api';
 import ServiceConfiguration from './components/admin/ServiceConfiguration';
 import './App.css';
 
-function App() {
-  const [dashboardData, setDashboardData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [lastUpdated, setLastUpdated] = useState(null);
-  const [connectionStatus, setConnectionStatus] = useState('connecting');
+// Main App component using Context
+function AppContent() {
+  const { state, actions } = useAppContext();
   const hasDataRef = useRef(false);
 
-  // Poll data (default 2s; override with REACT_APP_POLLING_INTERVAL)
+  // Poll data using user preferences
   useEffect(() => {
-    const POLL_MS = Number(process.env.REACT_APP_POLLING_INTERVAL || 2000);
+    const POLL_MS = state.userPreferences.pollingInterval;
+    
     const fetchData = async () => {
       try {
-        setError(null);
+        actions.setError(null);
         const data = await ApiService.getDashboardData();
-        setDashboardData(data);
-        setLastUpdated(new Date());
-        setConnectionStatus('connected');
-        setLoading(false);
+        actions.setDashboardData(data);
+        actions.setConnectionStatus('connected');
         hasDataRef.current = true;
       } catch (err) {
         console.error('Failed to fetch dashboard data:', err);
-        setError('Kunde inte hämta data från servern');
-        setConnectionStatus('disconnected');
+        actions.setError('Kunde inte hämta data från servern');
+        actions.setConnectionStatus('disconnected');
         
         // Don't set loading to false on first error, keep trying
         if (!hasDataRef.current) {
-          setLoading(false);
+          actions.setLoading(false);
         }
       }
     };
 
-    // Initial fetch
-    fetchData();
+    // Only poll if auto refresh is enabled
+    if (state.userPreferences.autoRefresh) {
+      // Initial fetch
+      fetchData();
 
-    // Set up polling interval
-    const interval = setInterval(fetchData, POLL_MS);
+      // Set up polling interval
+      const interval = setInterval(fetchData, POLL_MS);
 
-    // Cleanup
-    return () => clearInterval(interval);
-  }, []);
+      // Cleanup
+      return () => clearInterval(interval);
+    }
+  }, [state.userPreferences.pollingInterval, state.userPreferences.autoRefresh, actions]);
 
   // Health check on mount
   useEffect(() => {
     const checkHealth = async () => {
       try {
         await ApiService.healthCheck();
-        setConnectionStatus('connected');
+        actions.setConnectionStatus('connected');
       } catch (err) {
-        setConnectionStatus('disconnected');
+        actions.setConnectionStatus('disconnected');
       }
     };
 
     checkHealth();
-  }, []);
+  }, [actions]);
 
   const DashboardView = () => (
-    <div className="dashboard-container">
-      <Header 
-        connectionStatus={connectionStatus}
-        lastUpdated={lastUpdated}
-      />
-      <Container fluid className="main-content">
-        {loading && !dashboardData ? (
-          <>
-            <div className="loading-spinner">
-              <div className="spinner-border spinner-border-custom text-primary" role="status">
-                <span className="visually-hidden">Laddar...</span>
+    <ErrorBoundary>
+      <div className="dashboard-container">
+        <Header />
+        <Container fluid className="main-content">
+          {state.loading && !state.dashboardData ? (
+            <>
+              <div className="loading-spinner">
+                <div className="spinner-border spinner-border-custom text-primary" role="status">
+                  <span className="visually-hidden">Laddar...</span>
+                </div>
               </div>
-            </div>
-            <div className="text-center mt-3">
-              <h5>Ansluter till Trio Enterprise API...</h5>
-              <p className="text-muted">Vänligen vänta medan systemet startar upp.</p>
-            </div>
-          </>
-        ) : (
-          <>
-            {error && (
-              <Row className="mb-3">
-                <Col>
-                  <Alert variant="warning" className="d-flex align-items-center">
-                    <i className="bi bi-exclamation-triangle-fill me-2"></i>
-                    <div>
-                      <strong>Anslutningsproblem:</strong> {error}
-                      <br />
-                      <small>Systemet försöker återansluta automatiskt...</small>
-                    </div>
-                  </Alert>
-                </Col>
-              </Row>
-            )}
-            <Dashboard data={dashboardData} />
-          </>
-        )}
-      </Container>
-      <AlertContainer alerts={dashboardData?.alerts || []} />
-    </div>
+              <div className="text-center mt-3">
+                <h5>Ansluter till Trio Enterprise API...</h5>
+                <p className="text-muted">Vänligen vänta medan systemet startar upp.</p>
+              </div>
+            </>
+          ) : (
+            <>
+              {state.error && (
+                <Row className="mb-3">
+                  <Col>
+                    <Alert variant="warning" className="d-flex align-items-center">
+                      <i className="bi bi-exclamation-triangle-fill me-2"></i>
+                      <div>
+                        <strong>Anslutningsproblem:</strong> {state.error}
+                        <br />
+                        <small>Systemet försöker återansluta automatiskt...</small>
+                      </div>
+                    </Alert>
+                  </Col>
+                </Row>
+              )}
+              <ErrorBoundary>
+                <Dashboard />
+              </ErrorBoundary>
+            </>
+          )}
+        </Container>
+        <ErrorBoundary>
+          <AlertContainer />
+        </ErrorBoundary>
+      </div>
+    </ErrorBoundary>
   );
 
   const AdminView = () => (
-    <div className="dashboard-container">
-      <Header 
-        connectionStatus={connectionStatus}
-        lastUpdated={lastUpdated}
-      />
-      <Container fluid className="main-content">
-        <ServiceConfiguration />
-      </Container>
-    </div>
+    <ErrorBoundary>
+      <div className="dashboard-container">
+        <Header />
+        <Container fluid className="main-content">
+          <ErrorBoundary>
+            <ServiceConfiguration />
+          </ErrorBoundary>
+        </Container>
+      </div>
+    </ErrorBoundary>
   );
 
   return (
@@ -131,6 +136,15 @@ function App() {
         <Route path="/admin" element={<AdminView />} />
       </Routes>
     </BrowserRouter>
+  );
+}
+
+// Root App component with Provider
+function App() {
+  return (
+    <AppProvider>
+      <AppContent />
+    </AppProvider>
   );
 }
 
