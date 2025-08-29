@@ -15,6 +15,7 @@ from database_improved import get_db
 from scheduler_improved import trio_scheduler
 
 from admin_api import admin_router, theme_router
+from task_api import router as task_router
 
 # Configure logging
 logging.basicConfig(
@@ -87,6 +88,7 @@ app.add_middleware(
 # Include admin and theme API routers
 app.include_router(admin_router)
 app.include_router(theme_router)
+app.include_router(task_router)
 
 
 @app.get("/")

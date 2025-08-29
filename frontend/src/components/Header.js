@@ -12,6 +12,7 @@ import { sv } from 'date-fns/locale';
 const Header = ({ connectionStatus, lastUpdated }) => {
   const location = useLocation();
   const onAdmin = location.pathname.startsWith('/admin');
+  const onTasks = location.pathname.startsWith('/tasks');
   const getConnectionBadge = () => {
     switch (connectionStatus) {
       case 'connected':
@@ -69,11 +70,27 @@ const Header = ({ connectionStatus, lastUpdated }) => {
             <div className="fw-bold">20-Sekunders Gräns</div>
             <small className="opacity-75">Servicenivå: 80% mål</small>
           </div>
-          <Link to={onAdmin ? '/' : '/admin'}>
-            <Button variant={onAdmin ? 'outline-light' : 'light'} size="sm">
-              {onAdmin ? 'Till Dashboard' : 'Administration'}
-            </Button>
-          </Link>
+          {!onTasks && (
+            <Link to="/tasks">
+              <Button variant="outline-light" size="sm">
+                Uppgifter
+              </Button>
+            </Link>
+          )}
+          {!onAdmin && (
+            <Link to="/admin">
+              <Button variant={onTasks ? 'outline-light' : 'light'} size="sm">
+                Administration
+              </Button>
+            </Link>
+          )}
+          {(onAdmin || onTasks) && (
+            <Link to="/">
+              <Button variant="light" size="sm">
+                Till Dashboard
+              </Button>
+            </Link>
+          )}
         </div>
       </Container>
     </Navbar>

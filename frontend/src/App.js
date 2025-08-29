@@ -13,6 +13,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import { AppProvider, useAppContext } from './context/AppContext';
 import ApiService from './services/api';
 import ServiceConfiguration from './components/admin/ServiceConfiguration';
+import TaskManagement from './components/tasks/TaskManagement';
 import './App.css';
 
 // Main App component using Context
@@ -129,11 +130,25 @@ function AppContent() {
     </ErrorBoundary>
   );
 
+  const TasksView = () => (
+    <ErrorBoundary>
+      <div className="dashboard-container">
+        <Header />
+        <Container fluid className="main-content">
+          <ErrorBoundary>
+            <TaskManagement />
+          </ErrorBoundary>
+        </Container>
+      </div>
+    </ErrorBoundary>
+  );
+
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<DashboardView />} />
         <Route path="/admin" element={<AdminView />} />
+        <Route path="/tasks" element={<TasksView />} />
       </Routes>
     </BrowserRouter>
   );
